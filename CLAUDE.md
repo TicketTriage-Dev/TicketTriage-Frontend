@@ -81,8 +81,6 @@ normal / urgent / severe).
 - Fonts: Space Grotesk (headings) + Inter (body) + JetBrains Mono (IDs / mono bits).
 - Define these as CSS variables / Bootstrap theme overrides in `src/styles/`, not hardcoded
   per-component.
-- A reference implementation of the board UI exists (`TicketMatchr.jsx`); reuse its visual
-  language but re-skin it to the palette above (it originally used a different brand color).
 
 ---
 

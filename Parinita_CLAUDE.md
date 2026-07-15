@@ -133,7 +133,7 @@ Suggested Redis caching: cache `GET /api/categories` and `GET /api/employees` (r
 - **`/queue`** — developer's own assigned tickets, with status controls.
 - Shared shell: slim left sidebar (Board / My queue / Team / Settings) + top bar with search and the current user's avatar (letter avatar from their name).
 
-A reference implementation of the board UI already exists (`TicketMatchr.jsx`) — reuse its visual language: light theme, Space Grotesk + Inter + JetBrains Mono, palette navy `#001F3F` (brand) / gold `#C5A059` (accent) / white `#FFFFFF` (surface) / light gray `#E5E5E5` (borders), priority-as-bolt as the signature element. The reference uses a scoped `<style>` block; port those styles to the react-bootstrap theme / CSS to match the rest of the codebase.
+Visual language: light theme, Space Grotesk + Inter + JetBrains Mono, palette navy `#001F3F` (brand) / gold `#C5A059` (accent) / white `#FFFFFF` (surface) / light gray `#E5E5E5` (borders), priority-as-bolt as the signature element. Define these as react-bootstrap theme overrides / CSS variables in `src/styles/`.
 
 > **Note:** the canonical, up-to-date brief is now [`CLAUDE.md`](CLAUDE.md) in the repo root (decided stack, palette, folder structure, work split). This file is kept for history.
 
