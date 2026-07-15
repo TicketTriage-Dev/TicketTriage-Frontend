@@ -1,18 +1,42 @@
-# TicketMatchr — Project Context
+# TicketMatchr — Project Context (canonical brief)
 
-> Working brief. Defines what we're building, the boundaries, and the build order.
-> **Stay inside the scope below** — this is a 3-day learning project, not a production product.
+> **Read this first, every session.** This is the single source of truth for the project.
+> If you're picking up after a `git pull`, also read [`FRONTEND_WORKPLAN.md`](FRONTEND_WORKPLAN.md)
+> for who-owns-what, then check `git log`/`git status` to see what changed.
 >
-> **This repo builds the FRONTEND ONLY.** The PHP/MySQL backend is documented here for reference
-> (so the API client matches), but is not implemented in this repo.
+> **This repo builds the FRONTEND ONLY.** The PHP/MySQL backend is a separate person's repo;
+> it is documented here (sections 4–5) only so the frontend API client and types match. We
+> develop the frontend against a **mock data layer** so we are never blocked on the backend.
+>
+> **Team:** frontend is built by **two people — Soham & Parinita** (see the work split in
+> `FRONTEND_WORKPLAN.md`); backend is a third person. Stay inside the scope in section 2 — this
+> is a 3-day learning project, not production. Deadline: Friday 6pm.
+
+---
+
+## 0. Decided stack & conventions (READ — these override older notes)
+
+- **Framework:** Next.js (App Router) + TypeScript.
+- **State:** Redux Toolkit (typed `useAppSelector` / `useAppDispatch`, one slice per domain:
+  `authSlice`, `ticketsSlice`).
+- **UI / styling:** **react-bootstrap** (Bootstrap CSS + a custom theme). **Tailwind is being
+  removed** — do not add Tailwind classes or utilities. Interactive components must be client
+  components (`"use client"`).
+- **Component workshop:** Storybook — every reusable component in `components/ui` and
+  `components/tickets` gets a story.
+- **Data:** typed API client in `src/lib/api.ts` (one place for fetch + auth header + error
+  handling), backed by `src/lib/mockData.ts` until the backend is live.
+- **Git:** feature branch per person → PR into `main` → review each other. Pull `main` every
+  morning, push small commits end of day. `node_modules` stays out of git.
 
 ---
 
 ## 1. What we're building
 
-A small Jira-style internal ticket tool for a dev team. **Agents** raise tickets and assign them to **developers**; developers work through their assigned tickets across three states (To do → In progress → Done). The demo data is themed around our real project, GuestMatchr (a podcast guest–host matching platform), so tickets read like a real backlog.
-
-**Goal:** learn the full stack end to end and produce something clean and demo-able. Deadline: Friday 6pm.
+A small Jira-style internal ticket tool for a dev team. **Agents** raise tickets and assign them
+to **developers**; developers work through their assigned tickets across three states
+(To do → In progress → Done). Demo data is themed around GuestMatchr (a podcast guest–host
+matching platform) so tickets read like a real backlog.
 
 **Two personas**
 - **Agent** — creates tickets, sets category + priority, assigns a developer.
@@ -20,7 +44,7 @@ A small Jira-style internal ticket tool for a dev team. **Agents** raise tickets
 
 ---
 
-## 2. Scope (read this before writing anything)
+## 2. Scope
 
 **In scope**
 - Auth (login) with JWT, two roles: `agent`, `developer`.
@@ -42,70 +66,51 @@ If a feature isn't listed under "In scope," ask before implementing it.
 
 ---
 
-## 3. Tech stack
+## 3. Color scheme & visual language
 
-**Frontend**
-- Next.js (App Router) + TypeScript + Tailwind CSS.
-- Client components where state is needed (`"use client"`).
-- Calls the PHP API over HTTP; expects **JSON responses only**.
+Light theme. Signature element is **priority-as-bolt** (a lightning bolt shown 1/2/3 times for
+normal / urgent / severe).
 
-**Backend** (reference only — NOT built in this repo)
-- PHP with a layered **Controller → Service → Repository** architecture.
-- MySQL (via XAMPP locally).
-- Pixie query builder.
-- JWT for authentication.
-- Redis for caching, with a graceful **fallback to MySQL** if Redis is unavailable.
-- PSR-4 autoloading; Front Controller pattern.
+| Token | Hex | Use |
+|---|---|---|
+| **Navy (brand / primary)** | `#001F3F` | Sidebar, headings, primary buttons, key text |
+| **Gold (accent)** | `#C5A059` | Accents, active/selected states, priority bolts, highlights |
+| **White (surface)** | `#FFFFFF` | Page background, cards |
+| **Light gray (muted)** | `#E5E5E5` | Borders, dividers, column backgrounds, subtle fills |
 
-**Hard API rule:** every endpoint returns JSON with the correct `Content-Type: application/json` header — including errors. Never let PHP emit an HTML error/warning page into an API response. Set up a global error/exception handler early that catches everything and returns a JSON envelope.
+- Fonts: Space Grotesk (headings) + Inter (body) + JetBrains Mono (IDs / mono bits).
+- Define these as CSS variables / Bootstrap theme overrides in `src/styles/`, not hardcoded
+  per-component.
+- A reference implementation of the board UI exists (`TicketMatchr.jsx`); reuse its visual
+  language but re-skin it to the palette above (it originally used a different brand color).
 
 ---
 
-## 4. Data model
+## 4. Data model (backend reference — mirror in `src/types`)
 
-Keep it to three tables. `assigned_to` lives on the ticket as a nullable FK (simplest for this scope). A separate `assignment` join table is only needed if we later allow many devs per ticket — we don't, so skip it for now.
+Three tables. `assigned_to` lives on the ticket as a nullable FK.
 
-**employee**
-| column | type | notes |
-|---|---|---|
-| employee_id | INT PK AI | |
-| username | VARCHAR | |
-| email | VARCHAR UNIQUE | |
-| password_hash | VARCHAR | store a hash, never plaintext |
-| role | ENUM('agent','developer') | |
+**employee**: `employee_id` (INT PK), `username` (VARCHAR), `email` (VARCHAR UNIQUE),
+`password_hash` (VARCHAR), `role` (ENUM `agent`|`developer`).
 
-**category**
-| column | type | notes |
-|---|---|---|
-| category_id | INT PK AI | |
-| name | VARCHAR | e.g. Backend, Frontend, Auth, Database, Infra |
+**category**: `category_id` (INT PK), `name` (VARCHAR — e.g. Backend, Frontend, Auth, Database, Infra).
 
-**ticket**
-| column | type | notes |
-|---|---|---|
-| ticket_id | INT PK AI | |
-| name | VARCHAR | short summary |
-| description | TEXT | |
-| category_id | INT FK → category | |
-| status | ENUM('todo','doing','done') | default 'todo' |
-| priority | ENUM('normal','urgent','severe') | set manually by agent |
-| assigned_to | INT FK → employee, NULLABLE | the developer |
-| time_to_complete | VARCHAR / INT | rough estimate, optional |
-| created_at | DATETIME | default now |
-
-Add an index on `assigned_to` and `status` — they drive the two main queries (board grouping, developer queue).
+**ticket**: `ticket_id` (INT PK), `name` (VARCHAR summary), `description` (TEXT),
+`category_id` (FK), `status` (ENUM `todo`|`doing`|`done`, default `todo`),
+`priority` (ENUM `normal`|`urgent`|`severe`), `assigned_to` (FK → employee, NULLABLE),
+`time_to_complete` (VARCHAR/INT, optional), `created_at` (DATETIME).
 
 ---
 
-## 5. API surface
+## 5. API surface (what the client calls)
 
-Prefix everything with `/api`. All responses JSON. Protect write routes with JWT + role checks.
+Prefix everything with `/api`. All responses JSON. Write routes require JWT + role checks.
 
 ```
 POST   /api/auth/login              -> { token, user }
 GET    /api/me                      -> current user (from JWT)
 
-GET    /api/tickets                 -> all tickets (board view); supports ?status= &priority= &assigned_to=
+GET    /api/tickets                 -> all tickets (board view); ?status= &priority= &assigned_to=
 POST   /api/tickets                 -> create ticket (agent only)
 PATCH  /api/tickets/{id}            -> update status / assignee / priority
 GET    /api/tickets/mine            -> developer's own queue (from JWT)
@@ -114,59 +119,52 @@ GET    /api/categories              -> list categories
 GET    /api/employees?role=developer-> for the assignee picker
 ```
 
-**Standard JSON envelope**
+**Standard JSON envelope** — model `ApiResult<T>` in `src/types` on this:
 ```json
-// success
 { "ok": true, "data": { } }
-// error
 { "ok": false, "error": { "code": "VALIDATION", "message": "…" } }
 ```
-
-Suggested Redis caching: cache `GET /api/categories` and `GET /api/employees` (rarely change); invalidate ticket-list cache on any ticket write, and fall back to MySQL if Redis is down.
 
 ---
 
 ## 6. Frontend pages
 
 - **`/login`** — email + password, stores JWT, redirects by role.
-- **`/board`** — the Kanban triage board (To do / In progress / Done). Cards show ticket ID, title, category tag, priority (shown as a lightning "bolt" — 1/2/3 bolts for normal/urgent/severe), estimate, and assignee avatar. Agents can create + assign here.
+- **`/board`** — Kanban board (To do / In progress / Done). Cards show ticket ID, title, category
+  tag, priority (bolts), estimate, assignee avatar. Agents can create + assign here.
 - **`/queue`** — developer's own assigned tickets, with status controls.
-- Shared shell: slim left sidebar (Board / My queue / Team / Settings) + top bar with search and the current user's avatar (letter avatar from their name).
-
-A reference implementation of the board UI already exists (`TicketMatchr.jsx`) — reuse its visual language: light theme, Space Grotesk + Inter + JetBrains Mono, indigo `#5B4BF0` brand, priority-as-bolt as the signature element. The reference uses a scoped `<style>` block; port those styles to Tailwind utilities / CSS modules to match the rest of the codebase.
-
----
-
-## 7. Suggested build order (3 days)
-
-**Day 1 — foundation**
-- Frontend: project scaffold, Tailwind, login page, auth token handling, app shell.
-- (Backend, reference only: DB schema + seed data, Front Controller + router + global JSON error handler, Auth login/JWT/`/api/me`.)
-
-**Day 2 — core loop**
-- Frontend: wire the board to `/api/tickets`, the create-ticket panel to `POST /api/tickets`, and the assignee dropdown to `PATCH`.
-- (Backend, reference only: tickets CRUD, categories + employees endpoints, role guards, Redis caching.)
-
-**Day 3 — polish + demo**
-- Developer `/queue` view + status changes.
-- Empty/error/loading states, form validation, responsive check, keyboard focus.
-- Seed a clean demo dataset, write a short README with run steps, rehearse the walkthrough.
+- **`/team`, `/settings`** — simple placeholder pages reached from the sidebar.
+- Shared shell: slim left sidebar (Board / My queue / Team / Settings) + top bar with search and a
+  letter avatar of the current user.
 
 ---
 
-## 8. Conventions
+## 7. Folder structure (`frontend/src`)
 
-- **Backend layering** (reference): Controllers parse the request and shape the response; Services hold business rules; Repositories do data access via Pixie. Controllers never touch the DB directly.
-- **Auth:** verify JWT in middleware/front controller; attach the decoded user; role-guard write endpoints.
-- **Validation:** validate on the server; return the JSON error envelope, never a thrown HTML page.
-- **Security basics:** hashed passwords, parameterized queries (Pixie handles this), no secrets in the repo.
-- **Frontend:** typed API client, one place for fetch + auth header + error handling. Optimistic UI is fine for status/assignee changes.
-- **Git:** feature branches per person, merge to main. Keep `node_modules` / `vendor` out of the repo.
+```
+app/            App Router pages: login, board, queue, team, settings (+ layout, globals)
+components/
+  auth/         login form, route/role guards
+  layout/       AppShell, Sidebar, TopBar
+  board/        board columns, create-ticket panel, assignee dropdown
+  tickets/      TicketCard, PriorityBolt, CategoryTag (shared, prop-driven)
+  ui/           primitives / react-bootstrap wrappers (Button, Badge, Avatar, Modal…)
+lib/            api.ts (fetch client) + mockData.ts (fixtures until backend is live)
+hooks/          reusable hooks
+store/          Redux store + slices (authSlice, ticketsSlice)
+constants/      statuses, priorities, categories, nav items
+types/          shared TS types (Ticket, Employee, Category, User, ApiResult)
+styles/         theme tokens (palette above), fonts
+```
 
-## 9. Definition of done
+Empty folders currently hold a `.gitkeep`; it disappears as real files land.
+
+---
+
+## 8. Definition of done
 
 - Agent can log in, create a ticket with category + priority, and assign a developer.
 - Developer can log in, see their queue, and move a ticket to done.
 - Board reflects all three states and updates after actions.
-- Every API response is valid JSON, including errors.
+- Every API response is handled as valid JSON, including errors.
 - Runs cleanly from a documented `README` (frontend on `npm run dev`).
