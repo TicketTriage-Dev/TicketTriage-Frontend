@@ -1,0 +1,67 @@
+// TicketMatchr theme — retheme Bootstrap 5.3 via its CSS variables.
+// Bootstrap's compiled CSS is imported first (in layout.tsx); these overrides win.
+// Palette (CLAUDE.md §3): navy brand, gold accent, white surface, light-gray borders.
+
+:root {
+  // Custom palette tokens for our own components
+  --navy: #001f3f;
+  --gold: #c5a059;
+  --surface: #ffffff;
+  --light-gray: #e5e5e5;
+
+  // Bootstrap theme-color overrides
+  --bs-primary: #001f3f;
+  --bs-primary-rgb: 0, 31, 63;
+  --bs-secondary: #c5a059;
+  --bs-secondary-rgb: 197, 160, 89;
+  --bs-body-bg: #ffffff;
+  --bs-body-color: #1a1a1a;
+  --bs-border-color: #e5e5e5;
+  --bs-link-color: #001f3f;
+  --bs-link-hover-color: #00284f;
+
+  // Fonts (CSS variables injected by next/font in the root layout)
+  --bs-body-font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-space-grotesk), var(--font-inter), sans-serif;
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+// Recolor Bootstrap buttons (5.3 buttons use local --bs-btn-* variables)
+.btn-primary {
+  --bs-btn-bg: #001f3f;
+  --bs-btn-border-color: #001f3f;
+  --bs-btn-hover-bg: #00284f;
+  --bs-btn-hover-border-color: #00284f;
+  --bs-btn-active-bg: #001832;
+  --bs-btn-active-border-color: #001832;
+}
+
+.btn-secondary {
+  --bs-btn-bg: #c5a059;
+  --bs-btn-border-color: #c5a059;
+  --bs-btn-color: #1a1a1a;
+  --bs-btn-hover-bg: #b38f47;
+  --bs-btn-hover-border-color: #b38f47;
+  --bs-btn-hover-color: #1a1a1a;
+  --bs-btn-active-bg: #a9853f;
+  --bs-btn-active-border-color: #a9853f;
+}
+
+html,
+body {
+  height: 100%;
+}
