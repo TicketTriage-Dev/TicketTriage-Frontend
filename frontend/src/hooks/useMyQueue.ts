@@ -1,61 +1,62 @@
 // useMyQueue — data for the developer's own queue.
 //
-// SWAP SEAM: this is the ONE place that reads ticket data. Today it calls the
-// `api.*` methods directly (mock-backed). When Soham's `ticketsSlice` lands,
-// swap the body to `useAppSelector(selectMyTickets)` + `dispatch(fetchTickets)`
-// + `dispatch(patchTicket(...))` — the returned shape stays the same, so
-// `/queue` doesn't change.
-import { useCallback, useEffect, useState } from "react";
-import { api, ApiClientError } from "@/lib/api";
-import { useAppSelector } from "@/store/hooks";
+// Reads from the shared `ticketsSlice` (owned by Soham) so board & queue stay in
+// sync off one store. This hook is the only place /queue touches ticket data —
+// the returned shape is stable, so the page never changes when the source does.
+import { useCallback, useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  fetchTickets,
+  patchTicket,
+  selectMyTickets,
+  selectTicketsError,
+  selectTicketsStatus,
+} from "@/store/ticketsSlice";
 import type { Ticket, TicketStatus } from "@/types";
 
 export interface UseMyQueue {
   tickets: Ticket[];
   loading: boolean;
   error: string | null;
-  /** Re-fetch the queue. */
+  /** Re-fetch the ticket list. */
   reload: () => void;
-  /** Optimistically change a ticket's status; rolls back and re-throws on failure. */
+  /** Change a ticket's status (persists via patchTicket → store updates on success). */
   updateStatus: (id: number, status: TicketStatus) => Promise<void>;
 }
 
 export function useMyQueue(): UseMyQueue {
+  const dispatch = useAppDispatch();
+  const tickets = useAppSelector(selectMyTickets);
+  const status = useAppSelector(selectTicketsStatus);
+  const error = useAppSelector(selectTicketsError);
   const userId = useAppSelector((s) => s.auth.user?.id);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setTickets(await api.getMyTickets());
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Failed to load your tickets.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const reload = useCallback(() => {
+    void dispatch(fetchTickets());
+  }, [dispatch]);
 
-  // Reload whenever the signed-in user changes (and on mount).
+  // Populate the shared store on mount / when the signed-in user changes.
   useEffect(() => {
-    void load();
-  }, [load, userId]);
+    void dispatch(fetchTickets());
+  }, [dispatch, userId]);
 
-  const updateStatus = useCallback(async (id: number, status: TicketStatus) => {
-    let rollback: Ticket[] = [];
-    setTickets((prev) => {
-      rollback = prev;
-      return prev.map((t) => (t.ticket_id === id ? { ...t, status } : t));
-    });
-    try {
-      await api.updateTicket(id, { status });
-    } catch (err) {
-      setTickets(rollback); // revert the optimistic change
-      throw err;
-    }
-  }, []);
+  const updateStatus = useCallback(
+    async (id: number, next: TicketStatus) => {
+      // Don't unwrap: a rejected patch resolves the dispatch without throwing, so
+      // the caller's fire-and-forget onChange can't leak an unhandled rejection.
+      // The store is the source of truth — on success `patchTicket.fulfilled`
+      // upserts the ticket; on failure it stays as-is.
+      await dispatch(patchTicket({ id, patch: { status: next } }));
+    },
+    [dispatch],
+  );
 
-  return { tickets, loading, error, reload: load, updateStatus };
+  return {
+    tickets,
+    // "idle" = before the first fetch resolves → treat as loading.
+    loading: status === "idle" || status === "loading",
+    error,
+    reload,
+    updateStatus,
+  };
 }

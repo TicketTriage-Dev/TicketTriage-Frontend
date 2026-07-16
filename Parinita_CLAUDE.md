@@ -30,12 +30,12 @@ mock `api.*` methods for now.
   `actions` slot + empty / loading / error states.
 - `/team` + `/settings` — placeholder pages (`RouteGuard` + `AppShell`).
 
-**Blocked / carried over:**
-- Swap `useMyQueue` off the direct `api.*` calls onto Soham's `ticketsSlice` (`selectMyTickets` +
-  `patchTicket`) when it lands — a one-file change. Proposed slice contract sent to Soham.
+**Integrated:**
+- Swapped `useMyQueue` off the direct `api.*` calls onto Soham's `ticketsSlice`
+  (`fetchTickets` + `selectMyTickets` + `patchTicket`) — he shipped it matching our contract, so it
+  was a one-file change. Board & queue now read one shared store. `tsc` + `next build` clean.
 
-**Day 2 status:** queue + status controls + placeholder pages DONE (on mock); `ticketsSlice`
-integration pending Soham.
+**Day 2 status: COMPLETE** — queue + status controls + placeholder pages + ticketsSlice integration all done.
 
 ### 2026-07-16 — Day 1 shell visuals (Day 1 COMPLETE ✅)
 
