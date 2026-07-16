@@ -14,6 +14,14 @@
 > Add an entry whenever a phase or task is finished: what was done, commit hashes,
 > and anything carried over. This is a human-readable record separate from git history.
 
+> **📥 Handoff from Soham (2026-07-16) — pull `main` before your next session.**
+> Two things landed that your `/queue` work depends on:
+> 1. **Contract change:** `Employee`/`User` is now `{ id, name, email, role, designation }`
+>    (was `employee_id`/`username`), and the API envelope is `{ status, msg, data }`. Auth is
+>    cookie-based. Your `TicketCard.stories.tsx` was already updated for this.
+> 2. **`ticketsSlice` is ready:** use `selectMyTickets(userId)` for the queue and `patchTicket({ id, patch })`
+>    to change a ticket's status. The `TicketCard` `actions` slot is where your `StatusControl` goes.
+
 ### 2026-07-16 — Day 1 shell visuals (Day 1 COMPLETE ✅)
 
 **Completed:**

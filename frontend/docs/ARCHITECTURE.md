@@ -64,7 +64,8 @@ frontend/
 | `layout.tsx` | Root layout. Loads Bootstrap CSS + `theme.scss`, sets up the three fonts, mounts the Redux `<Providers>`. Wraps every page. |
 | `page.tsx` | `/` route — redirects to `/login`. |
 | `login/page.tsx` | `/login` — branded card hosting the login form. |
-| `board/`, `queue/`, `team/`, `settings/` | Route folders for pages still to be built. |
+| `board/page.tsx` | `/board` — the Kanban triage board (3 columns). Agents get create + assign; everyone views. Wrapped in `RouteGuard` + `AppShell`. |
+| `queue/`, `team/`, `settings/` | Route folders for pages still to be built. |
 
 ### Types & constants
 
@@ -88,7 +89,7 @@ frontend/
 | `hooks.ts` | Typed `useAppDispatch` / `useAppSelector`. |
 | `Providers.tsx` | Client component wrapping the app in the Redux `<Provider>`. |
 | `authSlice.ts` | Auth state + `login` / `logout` / `restoreSession` thunks. Session = `user` set (no token in state). |
-| `ticketsSlice.ts` | **Stub** — will hold ticket state for board/queue. |
+| `ticketsSlice.ts` | Ticket state + `fetchTickets` / `createTicket` / `patchTicket` thunks and selectors (`selectByStatus` for the board columns, `selectMyTickets` for the queue). |
 
 ### Styling (`src/styles/`)
 
@@ -122,6 +123,14 @@ frontend/
 | `CategoryTag.tsx` | GitHub-issue-style category pill. |
 | `TicketCard.tsx` | Shared card (ID, title, category, bolts, estimate, assignee) used by both board & queue; has an `actions` slot for per-surface controls. |
 | `*.stories.tsx` | Their Storybook stories. |
+
+### Board components (`src/components/board/`)
+
+| File | What / why |
+|---|---|
+| `BoardColumn.tsx` | One Kanban column — a titled, counted stack of `TicketCard`s with an empty state. |
+| `AssigneeDropdown.tsx` | Agent control on a card: reassign the developer → `patchTicket` (PATCH). |
+| `CreateTicketPanel.tsx` | Agent-only modal form (title/description/category/priority/assignee/estimate) → `createTicket` (POST). |
 
 ### Auth components (`src/components/auth/`)
 

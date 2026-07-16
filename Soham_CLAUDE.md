@@ -13,6 +13,25 @@
 > Running record of my completed phases/tasks. **Newest entry first.** Add an entry
 > whenever a phase or task is finished: what was done and anything carried over.
 
+### 2026-07-16 — Day 2: Board vertical
+
+**Built the triage board (agent flow):**
+- `store/ticketsSlice.ts` — `fetchTickets` / `createTicket` / `patchTicket` thunks + selectors
+  (`selectByStatus` for columns, `selectMyTickets` for Parinita's queue, `selectAllTickets`).
+- `components/board/BoardColumn.tsx` — a Kanban column (titled, counted, empty state) rendering
+  Parinita's `TicketCard`.
+- `components/board/AssigneeDropdown.tsx` — agent reassign control → PATCH.
+- `components/board/CreateTicketPanel.tsx` — agent-only modal form (uses her `Modal`) → POST.
+- `app/board/page.tsx` — `RouteGuard` + `AppShell`; loads tickets + categories + developers,
+  renders the 3 columns, gates create/assign to agents, feeds the user name to the top bar.
+- `tsc --noEmit` clean; `/board` compiles + serves.
+
+**Carried over / dependencies:**
+- Board is **mock-backed** — backend has only published AUTH endpoints so far. To see it render
+  now, set `NEXT_PUBLIC_USE_MOCK=true`; to go live, confirm the real `/tickets`, `/categories`,
+  `/employees` routes with the backend dev and adjust the paths in `lib/api.ts`.
+- Day 3 next: developer `/queue` + status controls (Parinita), then empty/error/loading polish.
+
 ### 2026-07-16 — Phase 1: Auth vertical
 
 **Reconciled the client to the REAL backend contract** (the earlier Phase 0 assumptions
