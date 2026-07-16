@@ -182,7 +182,7 @@ export const api = {
       () => {
         const ticket: Ticket = {
           ticket_id: nextTicketId++,
-          status: "todo",
+          status: "Assigned",
           assigned_to: input.assigned_to ?? null,
           time_to_complete: input.time_to_complete ?? null,
           created_at: new Date().toISOString(),

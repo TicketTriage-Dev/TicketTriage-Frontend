@@ -94,6 +94,14 @@ Owns: `store/authSlice.ts`, `store/ticketsSlice.ts`, `app/login/`, `app/board/`,
 > - **Backend:** no new endpoint — reuses the existing `PATCH /tickets/{id}` (CLAUDE.md §5).
 > - Optional: an `EditTicketPanel` Storybook story, to match the rest.
 
+> **Status enum aligned to backend — DONE (Parinita).** Soham's area (foundation files), but
+> Parinita did this small sweep: ticket `status` values now match Nishita's ENUM
+> `Assigned / In Progress / Done` (was `todo / doing / done`) across `types` (`TicketStatus`),
+> `constants` (`STATUSES` + `STATUS_LABELS`), `lib/mockData.ts`, and the `createTicket` default in
+> `lib/api.ts`. Display labels unchanged ("To do" / "In progress" / "Done") — value = stored,
+> label = shown. Priority stays `normal/urgent/severe` (Nishita is matching the DB to the frontend
+> there). `tsc --noEmit` clean.
+
 ### Parinita — Component library + Queue (the developer flow)
 
 Owns: `components/ui/`, `components/tickets/`, Storybook stories, `app/queue/`, `app/team/`,

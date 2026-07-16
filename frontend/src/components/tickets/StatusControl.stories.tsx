@@ -11,7 +11,7 @@ const meta = {
   component: StatusControl,
   parameters: { layout: "centered" },
   tags: ["autodocs"],
-  args: { status: "todo", onChange: fn(), disabled: false, size: "sm" },
+  args: { status: "Assigned", onChange: fn(), disabled: false, size: "sm" },
 } satisfies Meta<typeof StatusControl>;
 
 export default meta;
@@ -24,5 +24,5 @@ function Demo(args: ComponentProps<typeof StatusControl>) {
 }
 
 export const Interactive: Story = { render: (args) => <Demo {...args} /> };
-export const InProgress: Story = { args: { status: "doing" }, render: (args) => <Demo {...args} /> };
+export const InProgress: Story = { args: { status: "In Progress" }, render: (args) => <Demo {...args} /> };
 export const Disabled: Story = { args: { disabled: true }, render: (args) => <Demo {...args} /> };

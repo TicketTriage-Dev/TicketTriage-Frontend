@@ -2,15 +2,15 @@ import type { Priority, Role, TicketStatus } from "@/types";
 
 /** Board columns, in display order. */
 export const STATUSES: { value: TicketStatus; label: string }[] = [
-  { value: "todo", label: "To do" },
-  { value: "doing", label: "In progress" },
-  { value: "done", label: "Done" },
+  { value: "Assigned", label: "To do" },
+  { value: "In Progress", label: "In progress" },
+  { value: "Done", label: "Done" },
 ];
 
 export const STATUS_LABELS: Record<TicketStatus, string> = {
-  todo: "To do",
-  doing: "In progress",
-  done: "Done",
+  Assigned: "To do",
+  "In Progress": "In progress",
+  Done: "Done",
 };
 
 /** Priorities, with the bolt count that drives the priority-as-bolt UI. */

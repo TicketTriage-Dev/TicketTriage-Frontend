@@ -2,7 +2,7 @@
 // ticket/category shapes track the data model until those endpoints are finalized.
 
 export type Role = "agent" | "developer";
-export type TicketStatus = "todo" | "doing" | "done";
+export type TicketStatus = "Assigned" | "In Progress" | "Done";
 export type Priority = "normal" | "urgent" | "severe";
 
 /**
