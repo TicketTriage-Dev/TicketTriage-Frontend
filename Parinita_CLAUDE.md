@@ -8,6 +8,31 @@
 
 ---
 
+## Progress log — Parinita
+
+> Running record of completed phases/tasks (mine, Parinita). **Newest entry first.**
+> Add an entry whenever a phase or task is finished: what was done, commit hashes,
+> and anything carried over. This is a human-readable record separate from git history.
+
+### 2026-07-15 — Day 1
+
+**Completed:**
+- Verified Soham's **Phase 0** foundation is in place — tooling swap to react-bootstrap + theme/palette, Redux store + typed hooks + `authSlice`/`ticketsSlice` stubs, shared `types`, `constants`, `lib/api.ts` + `lib/mockData.ts`, app-shell skeletons, and Storybook init.
+- Built the shared **UI component library** in Storybook — every component has a story; `tsc --noEmit` and `build-storybook` both clean:
+  - Leaf components: **PriorityBolt** (priority-as-bolt), **Avatar** (letter avatar), **CategoryTag** (issue-style pill)
+  - react-bootstrap wrappers: **Button** (adds a `loading` state), **Badge**, **Modal** (title/body/footer slots)
+  - Shared **TicketCard** — composes PriorityBolt + CategoryTag + Avatar; takes resolved `categoryName`/`assigneeName`, plus an `onClick` and an `actions` slot so board & queue reuse it.
+- Fixed a Phase 0 gap: created `frontend/public/` so Storybook's `staticDirs` resolves (build was failing without it).
+- Wrote the **TicketCard props contract** and handed it to Soham (his `/board` consumes the card).
+- Committed to `main`: `3eceb7e` (leaf components + TicketCard + `public/`), `6b88233` (Button/Badge/Modal wrappers).
+
+**Carried over (still Day 1 scope):**
+- **Shell visuals** — restyle `Sidebar` + `TopBar` and wire in the new `Avatar`. Gated on confirming Soham is clear of `components/layout/` (his Phase 0 files).
+
+**Day 1 status:** UI kit ✅ · TicketCard ✅ · shell visuals ⏳ pending.
+
+---
+
 ## 1. What we're building
 
 A small Jira-style internal ticket tool for a dev team. **Agents** raise tickets and assign them to **developers**; developers work through their assigned tickets across three states (To do → In progress → Done). The demo data is themed around our real project, GuestMatchr (a podcast guest–host matching platform), so tickets read like a real backlog.
