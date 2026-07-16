@@ -14,13 +14,28 @@
 > Add an entry whenever a phase or task is finished: what was done, commit hashes,
 > and anything carried over. This is a human-readable record separate from git history.
 
-> **📥 Handoff from Soham (2026-07-16) — pull `main` before your next session.**
-> Two things landed that your `/queue` work depends on:
-> 1. **Contract change:** `Employee`/`User` is now `{ id, name, email, role, designation }`
->    (was `employee_id`/`username`), and the API envelope is `{ status, msg, data }`. Auth is
->    cookie-based. Your `TicketCard.stories.tsx` was already updated for this.
-> 2. **`ticketsSlice` is ready:** use `selectMyTickets(userId)` for the queue and `patchTicket({ id, patch })`
->    to change a ticket's status. The `TicketCard` `actions` slot is where your `StatusControl` goes.
+### 2026-07-16 — Day 2 (queue + status controls)
+
+**Context:** Soham landed the auth vertical + Nishita's real API contract (cookie sessions,
+`{status,msg,data}` envelope, `Employee`/`User` = `id`/`name`/`designation`). I updated CLAUDE.md
+§7 and FRONTEND_WORKPLAN.md to match. `ticketsSlice` is still a stub, so tickets go through the
+mock `api.*` methods for now.
+
+**Completed** (all on mock; `tsc`, `next build`, and `build-storybook` clean):
+- `StatusControl` (`components/tickets`) — controlled To do / In progress / Done select + story.
+- Shared state views (`components/ui/States`) — `LoadingState` / `EmptyState` / `ErrorState` + story.
+- `hooks/useMyQueue` — the single data seam: current user from `authSlice` + `api.getMyTickets` /
+  `updateTicket`, with an optimistic status update + rollback.
+- `/queue` — `RouteGuard(developer)` + `AppShell` + `TicketCard`s with `StatusControl` in the
+  `actions` slot + empty / loading / error states.
+- `/team` + `/settings` — placeholder pages (`RouteGuard` + `AppShell`).
+
+**Blocked / carried over:**
+- Swap `useMyQueue` off the direct `api.*` calls onto Soham's `ticketsSlice` (`selectMyTickets` +
+  `patchTicket`) when it lands — a one-file change. Proposed slice contract sent to Soham.
+
+**Day 2 status:** queue + status controls + placeholder pages DONE (on mock); `ticketsSlice`
+integration pending Soham.
 
 ### 2026-07-16 — Day 1 shell visuals (Day 1 COMPLETE ✅)
 

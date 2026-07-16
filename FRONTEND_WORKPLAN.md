@@ -37,8 +37,9 @@ Nobody starts their feature until this is pushed. Deliverables:
 - **Redux store:** `src/store/index.ts` with the store + `<Provider>` wired into `app/layout.tsx`,
   plus typed hooks (`useAppDispatch`, `useAppSelector`). Register **two empty slice stubs**:
   `authSlice`, `ticketsSlice` (each owner fills their own file later).
-- **Types:** `src/types/index.ts` — `Ticket`, `Employee`, `Category`, `User`, `ApiResult<T>`
-  (the `{ ok, data } | { ok:false, error }` envelope).
+- **Types:** `src/types/index.ts` — `Ticket`, `Employee`, `Category`, `User`, `ApiEnvelope<T>`
+  (the real backend envelope `{ status, msg, data }`). *Updated 2026-07-16 to match Nishita's API;
+  `Employee`/`User` now use `id`/`name`/`designation`.*
 - **Constants:** `src/constants/index.ts` — statuses, priorities, category list, sidebar nav items.
 - **API + mock layer:** `src/lib/api.ts` (fetch wrapper: base URL, auth header, envelope parsing,
   error handling) **and** `src/lib/mockData.ts` (fixtures: ~8 GuestMatchr tickets, employees,
@@ -60,7 +61,13 @@ Nobody starts their feature until this is pushed. Deliverables:
 Owns: `store/authSlice.ts`, `store/ticketsSlice.ts`, `app/login/`, `app/board/`,
 `components/auth/`, `components/board/`.
 
-- `authSlice` — login thunk, current user, token persistence (localStorage), logout.
+> **Status (2026-07-16):** the auth vertical is DONE against Nishita's real cookie-based API —
+> `authSlice` (login/logout/restoreSession), `/login`, `LoginForm`, `RouteGuard`, and the
+> `lib/api.ts` refresh interceptor. **`ticketsSlice` + `/board` are still pending**, so Parinita's
+> `/queue` reads tickets through the mock `api.*` methods for now (swap to the slice when it lands).
+
+- `authSlice` — login/logout/restoreSession thunks, current user. **Cookie-based** sessions (no
+  localStorage token); a refresh interceptor in `lib/api.ts` retries once on a 401 and replays.
 - `/login` page + `LoginForm` — email/password, calls login, redirects by role.
 - Route guard / redirect-by-role helper.
 - `ticketsSlice` — `fetchTickets`, `createTicket`, `patchTicket` thunks + selectors (grouped by
