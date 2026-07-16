@@ -24,7 +24,8 @@ import type {
 import { mockCategories, mockEmployees, mockTickets } from "./mockData";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false";
-const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost/ticketTriage").replace(/\/$/, "");
+// Backend base URL comes from .env (NEXT_PUBLIC_API_URL) — never hardcoded here.
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 
 /** Raised when an API call fails; carries HTTP status + backend message. */
 export class ApiClientError extends Error {
