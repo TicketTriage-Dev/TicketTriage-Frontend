@@ -17,11 +17,12 @@
 
 - **Logout** — `AppShell` dispatches the `logout` thunk and redirects to `/login`; `TopBar` got an
   optional `onLogout` prop + "Log out" button.
-- **Session-expired bug (cross-site cookies)** — backend sets `SameSite=Lax` cookies, so the browser
-  dropped them cross-origin (localhost → tunnel) → every post-login call 401'd. Fixed in dev with a
-  **Next.js proxy**: `/backend/*` → `BACKEND_ORIGIN` (same-origin, cookies stick, no CORS). Env is now
-  `BACKEND_ORIGIN` + `NEXT_PUBLIC_API_URL=/backend`. Real fix is backend-side (`SameSite=None; Secure`
-  + `Access-Control-Allow-Credentials`) — flagged to Nishita.
+- **Session-expired bug (cross-site cookies)** — backend originally set `SameSite=Lax` cookies, so the
+  browser dropped them cross-origin (localhost → tunnel) → every post-login call 401'd. Briefly worked
+  around with a Next.js `/backend` proxy, then **removed it** once Nishita fixed the backend
+  (CORS + `SameSite=None`). Client now calls the backend directly via `NEXT_PUBLIC_API_URL`.
+  ⚠️ **Still pending:** backend cookies are `SameSite=None` **without `Secure`** — browsers require
+  `Secure` for `SameSite=None`, so the session can still drop in-browser until Nishita adds it.
 - **Designation validation** — backend introduced a strict whitelist; synced `DESIGNATIONS` to its
   exact strings ("Frontend Developer", …). Also made `api.ts` surface `data.errors` so validation
   messages are actionable, not just "Validation failed". Aligned mock designations.

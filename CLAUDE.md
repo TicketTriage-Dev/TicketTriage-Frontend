@@ -26,9 +26,9 @@
   `components/tickets` gets a story.
 - **Data:** typed API client in `src/lib/api.ts` (one place for fetch + auth header + error
   handling), backed by `src/lib/mockData.ts` until the backend is live.
-- **Dev proxy:** the browser calls the relative `/backend/*`, which `next.config.ts` proxies to
-  `BACKEND_ORIGIN` server-side — this keeps the backend's `SameSite=Lax` auth cookies working
-  cross-origin in dev (no CORS). Set `NEXT_PUBLIC_API_URL=/backend` + `BACKEND_ORIGIN` in `.env.local`.
+- **Backend calls:** the client calls the backend directly via `NEXT_PUBLIC_API_URL`
+  (`.env.local`). Cross-origin cookie auth requires the backend to send CORS
+  (`Access-Control-Allow-Credentials`) and set cookies `SameSite=None; Secure`.
 - **Designations:** `DESIGNATIONS` in `constants/` must match the backend's whitelist exactly
   (registration validates against it).
 - **Git:** feature branch per person → PR into `main` → review each other. Pull `main` every
