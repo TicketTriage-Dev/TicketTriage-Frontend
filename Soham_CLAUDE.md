@@ -8,6 +8,50 @@
 
 ---
 
+## Progress log — Soham
+
+> Running record of my completed phases/tasks. **Newest entry first.** Add an entry
+> whenever a phase or task is finished: what was done and anything carried over.
+
+### 2026-07-16 — Phase 1: Auth vertical
+
+**Reconciled the client to the REAL backend contract** (the earlier Phase 0 assumptions
+were replaced once the backend auth APIs were shared):
+- **Cookie-based auth**, not bearer tokens. Backend sets httpOnly `access_token` (~15 min) +
+  `refresh_token` (~7 days). Client sends `credentials: "include"` and keeps no token in JS.
+- **Envelope is `{ status, msg, data }`** (was `{ ok, data }`). Modeled as `ApiEnvelope<T>` in `types`.
+- **User/Employee shape is `{ id, name, email, role, designation }`** (was `employee_id`/`username`).
+  Updated `types`, `mockData`, and fixed the ripple into Parinita's `TicketCard.stories.tsx`.
+- Base URL `http://localhost/ticketTriage` via `NEXT_PUBLIC_API_URL`.
+
+**Built the auth vertical:**
+- `lib/api.ts` — cookie transport + `{status,msg,data}` parsing + **refresh interceptor**:
+  on 401 it calls `/auth/refresh` once (single-flight guard) then replays the request; if
+  refresh fails → auth error (force re-login). No loops. Auth methods: login/register/logout/
+  me/refresh. Ticket/category/employee endpoints remain **mock-backed** (backend not published yet).
+- `store/authSlice.ts` — `login` / `logout` / `restoreSession` thunks; no token in state
+  (session = `user` set).
+- `components/auth/LoginForm.tsx` + `app/login/page.tsx` — email/password, redirect by role
+  (agent → `/board`, developer → `/queue`).
+- `components/auth/RouteGuard.tsx` — restores session on load, redirects unauth → `/login`,
+  optional per-page role gating.
+- Updated canonical `CLAUDE.md` §4–5 to the real contract. `tsc --noEmit` clean; dev server
+  boots, `/login` renders, `/` redirects.
+
+**Carried over:** login flow tested against the **mock** layer (`NEXT_PUBLIC_USE_MOCK` defaults on);
+still to smoke-test against the live PHP backend once it's reachable. Board/queue wiring is next.
+
+### 2026-07-15 — Phase 0: Foundation
+
+- Tooling swap Tailwind → **react-bootstrap** + bootstrap + sass; themed to the navy/gold
+  palette via Bootstrap CSS variables; wired the three fonts.
+- **Redux Toolkit** store + typed hooks + `Providers`; `authSlice`/`ticketsSlice` stubs.
+- Shared `types`, `constants`, `lib/api.ts` + `lib/mockData.ts` (GuestMatchr fixtures).
+- App-shell skeletons (`AppShell`/`Sidebar`/`TopBar`) — later finished by Parinita.
+- **Storybook** initialized with a themed preview.
+
+---
+
 ## 1. What we're building
 
 A small Jira-style internal ticket tool for a dev team. **Agents** raise tickets and assign them to **developers**; developers work through their assigned tickets across three states (To do → In progress → Done). The demo data is themed around our real project, GuestMatchr (a podcast guest–host matching platform), so tickets read like a real backlog.

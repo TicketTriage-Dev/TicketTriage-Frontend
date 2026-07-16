@@ -1,16 +1,19 @@
-// Typed API client — the ONE place for fetch + auth header + error handling.
+// Typed API client — the ONE place for fetch + auth + error handling.
 //
-// Until the backend is live we serve responses from the mock layer. Flip to the
-// real API by setting NEXT_PUBLIC_USE_MOCK=false and NEXT_PUBLIC_API_URL. Callers
-// (slices, components) never change — only this file does.
+// Auth is COOKIE-based (httpOnly access_token ~15min + refresh_token ~7d), so we
+// send `credentials: "include"` and keep NO token in JS. On a 401 the client
+// calls /auth/refresh ONCE, then replays the original request; if the refresh
+// itself fails, the session is dead and we surface an auth error (→ re-login).
 //
-// Each endpoint is declared once via `endpoint(real, mock)`: `real` runs against
-// the backend, `mock` against the fixtures. No per-method if/else branching.
+// Backend envelope: { status, msg, data }. Until the ticket/category/employee
+// endpoints are finalized we serve those from the mock layer; auth talks to the
+// real backend when NEXT_PUBLIC_USE_MOCK=false. Callers never change — only here.
 import type {
   Category,
   CreateTicketInput,
   Employee,
-  LoginResponse,
+  LoginInput,
+  RegisterInput,
   Role,
   Ticket,
   TicketStatus,
@@ -18,35 +21,26 @@ import type {
   UpdateTicketInput,
   User,
 } from "@/types";
-import { TOKEN_STORAGE_KEY } from "@/constants";
 import { mockCategories, mockEmployees, mockTickets } from "./mockData";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false";
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost/ticketTriage").replace(/\/$/, "");
 
-/** Raised when an API call fails; carries the envelope error code. */
+/** Raised when an API call fails; carries HTTP status + backend message. */
 export class ApiClientError extends Error {
+  status: number;
   code: string;
-  constructor(code: string, message: string) {
+  constructor(status: number, code: string, message: string) {
     super(message);
     this.name = "ApiClientError";
+    this.status = status;
     this.code = code;
   }
 }
 
-/**
- * Picks the real or mock implementation for an endpoint based on USE_MOCK.
- * This is the one branch point — every method below stays a single declaration.
- */
+/** Picks the real or mock implementation — the one branch point. */
 function endpoint<T>(real: () => Promise<T>, mock: () => Promise<T>): () => Promise<T> {
   return USE_MOCK ? mock : real;
-}
-
-// --- Real transport ---------------------------------------------------------
-
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(TOKEN_STORAGE_KEY);
 }
 
 function buildQuery(params: Record<string, string | number | undefined | null>): string {
@@ -58,69 +52,111 @@ function buildQuery(params: Record<string, string | number | undefined | null>):
   return str ? `?${str}` : "";
 }
 
+// --- Refresh interceptor (single-flight) ------------------------------------
+
+let refreshInFlight: Promise<boolean> | null = null;
+
 /**
- * Real fetch wrapper: attaches JSON + auth headers, parses the standard
- * { ok, data } | { ok:false, error } envelope, and throws ApiClientError on failure.
+ * Calls /auth/refresh at most once concurrently. Returns true if the session was
+ * refreshed. Never retries itself (guarded in request), so it can't loop.
  */
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = getToken();
+function refreshSession(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = request<null>("/auth/refresh", { method: "POST" }, { isRetry: true })
+      .then(() => true)
+      .catch(() => false)
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
+}
+
+/**
+ * Real fetch wrapper: sends cookies, parses the { status, msg, data } envelope,
+ * and on 401 refreshes once + replays. Throws ApiClientError on failure.
+ */
+async function request<T>(
+  path: string,
+  init: RequestInit = {},
+  opts: { isRetry?: boolean } = {},
+): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
+    credentials: "include",
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init.headers,
-    },
+    headers: { "Content-Type": "application/json", ...init.headers },
   });
 
-  let body: unknown;
+  // Access token expired → refresh once, then replay the original request.
+  if (res.status === 401 && !opts.isRetry && path !== "/auth/refresh") {
+    const refreshed = await refreshSession();
+    if (refreshed) return request<T>(path, init, { isRetry: true });
+    throw new ApiClientError(401, "UNAUTHENTICATED", "Session expired. Please log in again.");
+  }
+
+  let body: { status?: number; msg?: string; data?: T } | null = null;
   try {
     body = await res.json();
   } catch {
-    throw new ApiClientError("BAD_JSON", `Expected JSON from ${path} (HTTP ${res.status}).`);
+    throw new ApiClientError(res.status, "BAD_JSON", `Expected JSON from ${path} (HTTP ${res.status}).`);
   }
 
-  const env = body as
-    | { ok: true; data: T }
-    | { ok: false; error: { code: string; message: string } };
-
-  if (!env || typeof env !== "object" || !("ok" in env)) {
-    throw new ApiClientError("BAD_ENVELOPE", `Malformed response from ${path}.`);
+  const status = typeof body?.status === "number" ? body.status : res.status;
+  if (!res.ok || status >= 400) {
+    throw new ApiClientError(status, "API_ERROR", body?.msg ?? `Request to ${path} failed.`);
   }
-  if (!env.ok) throw new ApiClientError(env.error.code, env.error.message);
-  return env.data;
+  return body?.data as T;
 }
 
 // --- Mock transport ---------------------------------------------------------
 
 let ticketsStore: Ticket[] = [...mockTickets];
 let nextTicketId = Math.max(...mockTickets.map((t) => t.ticket_id)) + 1;
+let mockCurrentUser: User = mockEmployees[0];
 
-/** Resolve after a short delay to mimic network latency. */
 function delay<T>(value: T, ms = 250): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }
 
 // --- Public API -------------------------------------------------------------
-//
-// Signature convention: methods take their args, endpoint() chooses transport.
 
 export const api = {
-  login: (email: string, password: string) =>
-    endpoint<LoginResponse>(
-      () => request("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  // Auth (real backend contract) --------------------------------------------
+  login: (input: LoginInput) =>
+    endpoint<User>(
+      () => request<{ user: User }>("/auth/login", { method: "POST", body: JSON.stringify(input) }).then((d) => d.user),
       () => {
-        const user = mockEmployees.find((e) => e.email === email) ?? mockEmployees[0];
-        return delay({ token: `mock-token-${user.employee_id}`, user });
+        mockCurrentUser = mockEmployees.find((e) => e.email === input.email) ?? mockEmployees[0];
+        return delay(mockCurrentUser);
       },
+    )(),
+
+  register: (input: RegisterInput) =>
+    endpoint<User>(
+      () => request<{ user: User }>("/auth/register", { method: "POST", body: JSON.stringify(input) }).then((d) => d.user),
+      () => delay({ id: 99, name: input.name, email: input.email, role: "developer", designation: input.designation }),
+    )(),
+
+  logout: () =>
+    endpoint<null>(
+      () => request<null>("/auth/logout", { method: "POST" }),
+      () => delay(null),
     )(),
 
   me: () =>
     endpoint<User>(
-      () => request("/me"),
-      () => delay(mockEmployees[0]),
+      () => request<{ user: User }>("/auth/me").then((d) => d.user),
+      () => delay(mockCurrentUser),
     )(),
 
+  refresh: () =>
+    endpoint<boolean>(
+      () => refreshSession(),
+      () => delay(true),
+    )(),
+
+  // Tickets / categories / employees (endpoints provisional — mock-backed until
+  // the backend publishes these routes; adjust paths here when it does) --------
   getTickets: (filters?: { status?: TicketStatus; priority?: Priority; assigned_to?: number }) =>
     endpoint<Ticket[]>(
       () => request(`/tickets${buildQuery({ ...filters })}`),
@@ -128,8 +164,7 @@ export const api = {
         let items = [...ticketsStore];
         if (filters?.status) items = items.filter((t) => t.status === filters.status);
         if (filters?.priority) items = items.filter((t) => t.priority === filters.priority);
-        if (filters?.assigned_to != null)
-          items = items.filter((t) => t.assigned_to === filters.assigned_to);
+        if (filters?.assigned_to != null) items = items.filter((t) => t.assigned_to === filters.assigned_to);
         return delay(items);
       },
     )(),
@@ -137,7 +172,7 @@ export const api = {
   getMyTickets: () =>
     endpoint<Ticket[]>(
       () => request("/tickets/mine"),
-      () => delay(ticketsStore.filter((t) => t.assigned_to === mockEmployees[1].employee_id)),
+      () => delay(ticketsStore.filter((t) => t.assigned_to === mockCurrentUser.id)),
     )(),
 
   createTicket: (input: CreateTicketInput) =>
@@ -166,7 +201,7 @@ export const api = {
       () => {
         ticketsStore = ticketsStore.map((t) => (t.ticket_id === id ? { ...t, ...patch } : t));
         const updated = ticketsStore.find((t) => t.ticket_id === id);
-        if (!updated) throw new ApiClientError("NOT_FOUND", `Ticket ${id} not found.`);
+        if (!updated) throw new ApiClientError(404, "NOT_FOUND", `Ticket ${id} not found.`);
         return delay(updated);
       },
     )(),

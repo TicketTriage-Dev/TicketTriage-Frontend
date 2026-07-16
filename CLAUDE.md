@@ -88,8 +88,10 @@ normal / urgent / severe).
 
 Three tables. `assigned_to` lives on the ticket as a nullable FK.
 
-**employee**: `employee_id` (INT PK), `username` (VARCHAR), `email` (VARCHAR UNIQUE),
-`password_hash` (VARCHAR), `role` (ENUM `agent`|`developer`).
+**employee**: `id` (INT PK), `name` (VARCHAR), `email` (VARCHAR UNIQUE),
+`password_hash` (VARCHAR), `role` (ENUM `agent`|`developer`), `designation` (VARCHAR — e.g.
+"Frontend Dev"), `created_at`. *(The auth payload returns `id`/`name`/`role`/`designation`,
+never the hash — mirrored as `Employee`/`User` in `src/types`.)*
 
 **category**: `category_id` (INT PK), `name` (VARCHAR — e.g. Backend, Frontend, Auth, Database, Infra).
 
@@ -102,32 +104,49 @@ Three tables. `assigned_to` lives on the ticket as a nullable FK.
 
 ## 5. API surface (what the client calls)
 
-Prefix everything with `/api`. All responses JSON. Write routes require JWT + role checks.
+Base URL `http://localhost/ticketTriage` (configurable via `NEXT_PUBLIC_API_URL`). All responses JSON.
 
+**Auth is COOKIE-based, not bearer tokens.** The backend sets two httpOnly cookies:
+`access_token` (~15 min) and `refresh_token` (~7 days). The client sends
+`credentials: "include"` on every request and stores **no** token in JS.
+
+**Auth endpoints (confirmed against the real backend):**
 ```
-POST   /api/auth/login              -> { token, user }
-GET    /api/me                      -> current user (from JWT)
-
-GET    /api/tickets                 -> all tickets (board view); ?status= &priority= &assigned_to=
-POST   /api/tickets                 -> create ticket (agent only)
-PATCH  /api/tickets/{id}            -> update status / assignee / priority
-GET    /api/tickets/mine            -> developer's own queue (from JWT)
-
-GET    /api/categories              -> list categories
-GET    /api/employees?role=developer-> for the assignee picker
+POST   /auth/login     { email, password }        -> data.user
+POST   /auth/register  { name,email,password,designation } -> data.user
+POST   /auth/logout                                -> data: null
+GET    /auth/me                                    -> data.user (current session)
+POST   /auth/refresh                               -> data: null (rotates cookies)
 ```
 
-**Standard JSON envelope** — model `ApiResult<T>` in `src/types` on this:
+**Refresh flow (implemented in `lib/api.ts`):** on a `401`, the client calls
+`/auth/refresh` **once**, then replays the original request. If the refresh itself
+`401`s, the refresh token is dead → surface an auth error and force re-login. A
+single-flight guard prevents concurrent refreshes; the retry flag prevents loops.
+
+**Ticket / category / employee endpoints (provisional — backend not yet published;
+mock-backed until then):**
+```
+GET    /tickets            ?status= &priority= &assigned_to=   (board view)
+POST   /tickets            create (agent only)
+PATCH  /tickets/{id}       update status / assignee / priority
+GET    /tickets/mine       developer's own queue
+GET    /categories         list categories
+GET    /employees?role=    assignee picker
+```
+
+**Standard JSON envelope** — modeled as `ApiEnvelope<T>` in `src/types`:
 ```json
-{ "ok": true, "data": { } }
-{ "ok": false, "error": { "code": "VALIDATION", "message": "…" } }
+{ "status": 200, "msg": "OK", "data": { } }
 ```
+Errors use the same shape with a 4xx/5xx `status` and a human message in `msg`.
 
 ---
 
 ## 6. Frontend pages
 
-- **`/login`** — email + password, stores JWT, redirects by role.
+- **`/login`** — email + password; backend sets auth cookies, then redirects by role
+  (agent → `/board`, developer → `/queue`).
 - **`/board`** — Kanban board (To do / In progress / Done). Cards show ticket ID, title, category
   tag, priority (bolts), estimate, assignee avatar. Agents can create + assign here.
 - **`/queue`** — developer's own assigned tickets, with status controls.

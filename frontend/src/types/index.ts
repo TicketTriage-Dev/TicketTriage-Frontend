@@ -1,17 +1,24 @@
-// Shared domain types. Mirror of the backend data model (CLAUDE.md §4).
+// Shared domain types. Auth shapes mirror the real backend (see CLAUDE.md §5);
+// ticket/category shapes track the data model until those endpoints are finalized.
 
 export type Role = "agent" | "developer";
 export type TicketStatus = "todo" | "doing" | "done";
 export type Priority = "normal" | "urgent" | "severe";
 
+/**
+ * A person in the system. The backend's employee/user record.
+ * Fields match the real auth payload: id, name, email, role, designation.
+ */
 export interface Employee {
-  employee_id: number;
-  username: string;
+  id: number;
+  name: string;
   email: string;
   role: Role;
+  designation: string;
+  created_at?: string;
 }
 
-/** The authenticated user (employee without the password hash). */
+/** The authenticated user (same shape as Employee). */
 export type User = Employee;
 
 export interface Category {
@@ -26,7 +33,7 @@ export interface Ticket {
   category_id: number;
   status: TicketStatus;
   priority: Priority;
-  assigned_to: number | null;
+  assigned_to: number | null; // Employee.id
   time_to_complete?: string | number | null;
   created_at: string;
 }
@@ -41,24 +48,34 @@ export interface CreateTicketInput {
   time_to_complete?: string | number | null;
 }
 
-/** Fields that may be updated via PATCH /api/tickets/{id}. */
+/** Fields that may be updated via PATCH. */
 export interface UpdateTicketInput {
   status?: TicketStatus;
   priority?: Priority;
   assigned_to?: number | null;
 }
 
-export interface LoginResponse {
-  token: string;
-  user: User;
+/** Credentials for POST /auth/login. */
+export interface LoginInput {
+  email: string;
+  password: string;
 }
 
-/** Standard JSON envelope (CLAUDE.md §5). */
-export interface ApiError {
-  code: string;
-  message: string;
+/** Payload for POST /auth/register. */
+export interface RegisterInput {
+  name: string;
+  email: string;
+  password: string;
+  designation: string;
 }
 
-export type ApiResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: ApiError };
+/**
+ * Standard backend JSON envelope (CLAUDE.md §5):
+ *   { "status": 200, "msg": "OK", "data": { ... } }
+ * `data` is null on messages that carry no payload (logout, refresh).
+ */
+export interface ApiEnvelope<T> {
+  status: number;
+  msg: string;
+  data: T;
+}

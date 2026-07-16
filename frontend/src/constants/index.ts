@@ -1,4 +1,4 @@
-import type { Priority, TicketStatus } from "@/types";
+import type { Priority, Role, TicketStatus } from "@/types";
 
 /** Board columns, in display order. */
 export const STATUSES: { value: TicketStatus; label: string }[] = [
@@ -43,4 +43,8 @@ export const NAV_ITEMS = [
   { href: "/settings", label: "Settings" },
 ] as const;
 
-export const TOKEN_STORAGE_KEY = "ticketmatchr.token";
+/** Where each role lands after login (and the guard's default redirect). */
+export const HOME_BY_ROLE: Record<Role, string> = {
+  agent: "/board",
+  developer: "/queue",
+};

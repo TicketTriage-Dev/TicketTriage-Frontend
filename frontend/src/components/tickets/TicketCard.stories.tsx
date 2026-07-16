@@ -7,7 +7,7 @@ import { TicketCard } from "./TicketCard";
 const categoryName = (id: number) =>
   mockCategories.find((c) => c.category_id === id)?.name;
 const assigneeName = (id: number | null) =>
-  id == null ? null : (mockEmployees.find((e) => e.employee_id === id)?.username ?? null);
+  id == null ? null : (mockEmployees.find((e) => e.id === id)?.name ?? null);
 
 const base = mockTickets[0];
 
