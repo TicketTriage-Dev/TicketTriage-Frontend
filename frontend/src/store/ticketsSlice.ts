@@ -104,10 +104,15 @@ export const selectAllTickets = (s: RootState) => s.tickets.items;
 export const selectTicketsStatus = (s: RootState) => s.tickets.status;
 export const selectTicketsError = (s: RootState) => s.tickets.error;
 
-/** Tickets in a given column. */
-export const selectByStatus = (status: TicketStatus) => (s: RootState) =>
-  s.tickets.items.filter((t) => t.status === status);
+/** Tickets in a given column (board). Agreed signature: (state, status). */
+export const selectByStatus = (state: RootState, status: TicketStatus): Ticket[] =>
+  state.tickets.items.filter((t) => t.status === status);
 
-/** A developer's own tickets (for /queue). */
-export const selectMyTickets = (userId: number | undefined) => (s: RootState) =>
-  userId == null ? [] : s.tickets.items.filter((t) => t.assigned_to === userId);
+/**
+ * The current developer's own tickets (for /queue). Cross-slice: reads the
+ * logged-in user from auth, so callers don't pass an id.
+ */
+export const selectMyTickets = (state: RootState): Ticket[] => {
+  const userId = state.auth.user?.id;
+  return userId == null ? [] : state.tickets.items.filter((t) => t.assigned_to === userId);
+};
