@@ -26,6 +26,11 @@
   `components/tickets` gets a story.
 - **Data:** typed API client in `src/lib/api.ts` (one place for fetch + auth header + error
   handling), backed by `src/lib/mockData.ts` until the backend is live.
+- **Dev proxy:** the browser calls the relative `/backend/*`, which `next.config.ts` proxies to
+  `BACKEND_ORIGIN` server-side — this keeps the backend's `SameSite=Lax` auth cookies working
+  cross-origin in dev (no CORS). Set `NEXT_PUBLIC_API_URL=/backend` + `BACKEND_ORIGIN` in `.env.local`.
+- **Designations:** `DESIGNATIONS` in `constants/` must match the backend's whitelist exactly
+  (registration validates against it).
 - **Git:** feature branch per person → PR into `main` → review each other. Pull `main` every
   morning, push small commits end of day. `node_modules` stays out of git.
 
@@ -47,7 +52,7 @@ matching platform) so tickets read like a real backlog.
 ## 2. Scope
 
 **In scope**
-- Auth (login) via **cookie-based sessions** (short-lived access token + rotating refresh token), two roles: `agent`, `developer`.
+- Auth (login **+ registration**) via **cookie-based sessions** (short-lived access token + rotating refresh token), two roles: `agent`, `developer`. Registration picks a **designation** from a predefined list (`DESIGNATIONS` in `constants/`), not free text; on success the user is auto-logged-in.
 - Agent: create ticket, set category, set priority (manual), assign a developer.
 - Developer: view own queue, change ticket status.
 - Triage board (Kanban: To do / In progress / Done) — shared view.
@@ -147,6 +152,8 @@ Errors use the same shape with a 4xx/5xx `status` and a human message in `msg`.
 
 - **`/login`** — email + password; backend sets auth cookies, then redirects by role
   (agent → `/board`, developer → `/queue`).
+- **`/register`** — name, email, password, and a **designation** dropdown (predefined list);
+  auto-logs-in and redirects by role on success.
 - **`/board`** — Kanban board (To do / In progress / Done). Cards show ticket ID, title, category
   tag, priority (bolts), estimate, assignee avatar. Agents can create + assign here.
 - **`/queue`** — developer's own assigned tickets, with status controls.

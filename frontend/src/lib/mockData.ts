@@ -3,10 +3,10 @@
 import type { Category, Employee, Ticket } from "@/types";
 
 export const mockEmployees: Employee[] = [
-  { id: 1, name: "Soham", email: "soham@guestmatchr.dev", role: "agent", designation: "Product" },
-  { id: 2, name: "Parinita", email: "parinita@guestmatchr.dev", role: "developer", designation: "Frontend Dev" },
-  { id: 3, name: "Aditya", email: "aditya@guestmatchr.dev", role: "developer", designation: "Backend Dev" },
-  { id: 4, name: "Meera", email: "meera@guestmatchr.dev", role: "developer", designation: "Full-stack Dev" },
+  { id: 1, name: "Soham", email: "soham@guestmatchr.dev", role: "agent", designation: null },
+  { id: 2, name: "Parinita", email: "parinita@guestmatchr.dev", role: "developer", designation: "Frontend Developer" },
+  { id: 3, name: "Aditya", email: "aditya@guestmatchr.dev", role: "developer", designation: "Backend Developer" },
+  { id: 4, name: "Meera", email: "meera@guestmatchr.dev", role: "developer", designation: "Full Stack Developer" },
 ];
 
 export const mockCategories: Category[] = [

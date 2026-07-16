@@ -14,7 +14,8 @@ export interface Employee {
   name: string;
   email: string;
   role: Role;
-  designation: string;
+  /** Developer's role title (e.g. "Frontend Dev"); null for agents (backend contract). */
+  designation: string | null;
   created_at?: string;
 }
 

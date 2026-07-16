@@ -7,12 +7,6 @@ export const STATUSES: { value: TicketStatus; label: string }[] = [
   { value: "Done", label: "Done" },
 ];
 
-export const STATUS_LABELS: Record<TicketStatus, string> = {
-  Assigned: "To do",
-  "In Progress": "In progress",
-  Done: "Done",
-};
-
 /** Priorities, with the bolt count that drives the priority-as-bolt UI. */
 export const PRIORITIES: { value: Priority; label: string; bolts: number }[] = [
   { value: "normal", label: "Normal", bolts: 1 },
@@ -34,6 +28,27 @@ export const DEFAULT_CATEGORIES = [
   "Database",
   "Infra",
 ] as const;
+
+/**
+ * Predefined developer designations (team decision 2026-07-16 — no more free text).
+ * Registration picks from this list; the assignee picker shows it beside the name.
+ * Keep in sync with the backend's designation list. Swap to a GET /designations
+ * fetch later if it becomes data-driven (like categories).
+ */
+export const DESIGNATIONS = [
+  "Frontend Developer",
+  "Backend Developer",
+  "Full Stack Developer",
+  "Mobile Developer",
+  "DevOps Engineer",
+  "QA Engineer",
+  "Data Engineer",
+  "Machine Learning Engineer",
+  "Security Engineer",
+  "Site Reliability Engineer",
+] as const;
+
+export type Designation = (typeof DESIGNATIONS)[number];
 
 /** Sidebar navigation items. */
 export const NAV_ITEMS = [

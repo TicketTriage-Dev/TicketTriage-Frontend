@@ -170,6 +170,7 @@ export function EditTicketPanel({ show, onHide, ticket, categories, developers }
             {developers.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name}
+                {d.designation ? ` — ${d.designation}` : ""}
               </option>
             ))}
           </Form.Select>

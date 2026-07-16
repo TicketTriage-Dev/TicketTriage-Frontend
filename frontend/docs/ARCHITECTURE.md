@@ -12,8 +12,8 @@ navy/gold palette) · Storybook · a typed API client with a mock-data fallback.
 ## How data flows
 
 ```
-Component → Redux thunk (slice) → api.ts → { real fetch  | mock layer }
-                                              (cookies)     (mockData.ts)
+Component → Redux thunk (slice) → api.ts → { /backend proxy → real backend  |  mock layer }
+                                              (cookies, same-origin)            (mockData.ts)
 ```
 
 - Components never call `fetch` directly — they dispatch thunks or read the store.
@@ -21,25 +21,13 @@ Component → Redux thunk (slice) → api.ts → { real fetch  | mock layer }
   layer based on `NEXT_PUBLIC_USE_MOCK`, so nothing else changes when the backend comes online.
 - Auth is **cookie-based** (httpOnly `access_token` + `refresh_token`); no token is kept in JS.
 
----
+### Dev proxy (why `/backend`)
 
-## Directory layout
-
-```
-frontend/
-  .env.local / .env.example   env config (backend URL + mock toggle)
-  .storybook/                 Storybook config
-  docs/ARCHITECTURE.md        this file
-  src/
-    app/                      routes (App Router)
-    components/               UI, split by area
-    constants/                enums & fixed lists
-    hooks/                    reusable hooks (empty for now)
-    lib/                      API client + mock data
-    store/                    Redux store + slices
-    styles/                   theme
-    types/                    shared TypeScript types
-```
+The backend sets its auth cookies as `SameSite=Lax`, so a browser on `localhost:3000` won't send
+them to a different origin (the tunnel). To keep cookies working in dev **without backend/CORS
+changes**, `next.config.ts` proxies `/backend/*` → `BACKEND_ORIGIN` server-side, so every API call
+looks same-origin to the browser. Set `NEXT_PUBLIC_API_URL=/backend` and `BACKEND_ORIGIN=<tunnel>/ticketTriage`.
+*(Production fix belongs on the backend: `SameSite=None; Secure` cookies + `Access-Control-Allow-Credentials`.)*
 
 ---
 
@@ -51,35 +39,35 @@ frontend/
 |---|---|
 | `package.json` | Dependencies + scripts (`dev`, `build`, `storybook`). |
 | `tsconfig.json` | TypeScript config; defines the `@/*` → `src/*` import alias. |
-| `next.config.ts` | Next.js config (React Compiler on). |
-| `eslint.config.mjs` | Lint rules (Next + Storybook presets). |
-| `.env.local` | **Gitignored.** Local backend URL + `NEXT_PUBLIC_USE_MOCK`. |
+| `next.config.ts` | React Compiler on + the **dev proxy rewrite** (`/backend/*` → `BACKEND_ORIGIN`). |
+| `.env.local` | **Gitignored.** `BACKEND_ORIGIN`, `NEXT_PUBLIC_API_URL` (`/backend`), `NEXT_PUBLIC_USE_MOCK`. |
 | `.env.example` | Committed template of the env vars for teammates to copy. |
-| `next-env.d.ts` | Auto-generated Next type shims — do not edit. |
 
 ### Routing (`src/app/`)
 
 | File | What / why |
 |---|---|
-| `layout.tsx` | Root layout. Loads Bootstrap CSS + `theme.scss`, sets up the three fonts, mounts the Redux `<Providers>`. Wraps every page. |
-| `page.tsx` | `/` route — redirects to `/login`. |
-| `login/page.tsx` | `/login` — branded card hosting the login form. |
-| `board/page.tsx` | `/board` — the Kanban triage board (3 columns). Agents get create + assign; everyone views. Wrapped in `RouteGuard` + `AppShell`. |
-| `queue/`, `team/`, `settings/` | Route folders for pages still to be built. |
+| `layout.tsx` | Root layout. Loads Bootstrap CSS + `theme.scss`, sets up fonts, mounts the Redux `<Providers>`. |
+| `page.tsx` | `/` → redirects to `/login`. |
+| `login/page.tsx` | `/login` — modern two-column `AuthLayout` + `LoginForm`. |
+| `register/page.tsx` | `/register` — `AuthLayout` + `RegisterForm` (name/email/password + designation). |
+| `board/page.tsx` | `/board` — Kanban triage board (3 columns). Agents create + edit/assign; everyone views. |
+| `queue/page.tsx` | `/queue` — developer's own tickets + status controls. |
+| `team/page.tsx`, `settings/page.tsx` | Placeholder pages (guarded shell). |
 
 ### Types & constants
 
 | File | What / why |
 |---|---|
-| `types/index.ts` | All shared types: `Employee`/`User`, `Category`, `Ticket`, input types, `Role`/`TicketStatus`/`Priority`, and the `ApiEnvelope<T>` shape. The shared contract between components and the API. |
-| `constants/index.ts` | Fixed lists: statuses, priorities (+ bolt counts), categories, sidebar nav items, `HOME_BY_ROLE` (role → landing page). Avoids magic strings. |
+| `types/index.ts` | Shared types: `Employee`/`User`, `Category`, `Ticket`, input types, `Role`/`TicketStatus`/`Priority`, `ApiEnvelope<T>`. |
+| `constants/index.ts` | `STATUSES`, `PRIORITIES`/`PRIORITY_BOLTS`, `DESIGNATIONS` (+ `Designation` type — must match backend), `NAV_ITEMS`, `HOME_BY_ROLE`. |
 
 ### Data layer (`src/lib/`)
 
 | File | What / why |
 |---|---|
-| `api.ts` | The single typed API client: fetch wrapper, cookie auth (`credentials:"include"`), `{status,msg,data}` envelope parsing, error handling, and the **refresh-token interceptor** (on 401 → refresh once → replay; single-flight guard prevents loops). `endpoint(real, mock)` selects transport. |
-| `mockData.ts` | GuestMatchr-themed fixtures (employees, categories, 8 tickets) so the app runs with no backend. |
+| `api.ts` | The single typed API client: cookie auth (`credentials:"include"`), `{status,msg,data}` parsing, field-level error surfacing, and the **refresh interceptor** (401 → refresh once → replay; single-flight guard). `endpoint(real, mock)` selects transport. |
+| `mockData.ts` | GuestMatchr fixtures (employees, categories, 8 tickets) so the app runs with no backend. |
 
 ### State (`src/store/`)
 
@@ -87,79 +75,47 @@ frontend/
 |---|---|
 | `index.ts` | Configures the store, combines slices, exports `RootState`/`AppDispatch`. |
 | `hooks.ts` | Typed `useAppDispatch` / `useAppSelector`. |
-| `Providers.tsx` | Client component wrapping the app in the Redux `<Provider>`. |
-| `authSlice.ts` | Auth state + `login` / `logout` / `restoreSession` thunks. Session = `user` set (no token in state). |
-| `ticketsSlice.ts` | Ticket state + `fetchTickets` / `createTicket` / `patchTicket` thunks and selectors (`selectByStatus` for the board columns, `selectMyTickets` for the queue). |
+| `Providers.tsx` | Client wrapper for the Redux `<Provider>`. |
+| `authSlice.ts` | `login` / `register` (registers then auto-logs-in) / `logout` / `restoreSession` thunks. Session = `user` set. |
+| `ticketsSlice.ts` | `fetchTickets` / `createTicket` / `patchTicket` thunks + **memoized** selectors (`selectByStatus`, `selectMyTickets`). |
+
+### Hooks (`src/hooks/`)
+
+| File | What / why |
+|---|---|
+| `useMyQueue.ts` | Queue data seam — current user + their tickets via `ticketsSlice` (`selectMyTickets` / `patchTicket`). |
 
 ### Styling (`src/styles/`)
 
 | File | What / why |
 |---|---|
-| `theme.scss` | Retheme of Bootstrap to the navy/gold palette via CSS variables; font wiring; button recoloring. Brand in one place. |
+| `theme.scss` | Retheme of Bootstrap to the navy/gold palette via CSS variables; fonts; button recoloring. |
 
-### Layout components (`src/components/layout/`)
+### Components
 
-| File | What / why |
+| Area | Files |
 |---|---|
-| `AppShell.tsx` | Shared frame: sidebar + top bar + scrollable content. Every authenticated page uses it. |
-| `Sidebar.tsx` | Navy left nav, gold active state, hand-drawn icons. |
-| `TopBar.tsx` | Search box + current-user `Avatar`. |
+| `layout/` | `AppShell` (frame + logout wiring), `Sidebar` (nav), `TopBar` (search, avatar, **Log out**). |
+| `ui/` | `Avatar`, `Button` (+`loading`), `Badge`, `Modal`, `States` (Loading/Empty/Error). |
+| `tickets/` | `PriorityBolt`, `CategoryTag`, `TicketCard` (shared; `actions` slot), `StatusControl` (queue). |
+| `board/` | `BoardColumn`, `CreateTicketPanel` (POST), `EditTicketPanel` (agent Edit → PATCH; title/desc/category/priority/assignee). |
+| `auth/` | `AuthLayout` (branded two-column shell), `LoginForm`, `RegisterForm`, `RouteGuard`. |
 
-### Reusable UI kit (`src/components/ui/`)
-
-| File | What / why |
-|---|---|
-| `Avatar.tsx` | Letter avatar (initials in a circle). |
-| `Button.tsx` | react-bootstrap Button + a `loading` spinner state. |
-| `Badge.tsx` | Badge wrapper defaulting to the navy brand color. |
-| `Modal.tsx` | Modal wrapper standardizing title/body/footer. |
-| `*.stories.tsx` | Storybook stories — each component in isolation with its variants. |
-
-### Ticket components (`src/components/tickets/`)
-
-| File | What / why |
-|---|---|
-| `PriorityBolt.tsx` | Signature element: 1/2/3 gold bolts for normal/urgent/severe. |
-| `CategoryTag.tsx` | GitHub-issue-style category pill. |
-| `TicketCard.tsx` | Shared card (ID, title, category, bolts, estimate, assignee) used by both board & queue; has an `actions` slot for per-surface controls. |
-| `*.stories.tsx` | Their Storybook stories. |
-
-### Board components (`src/components/board/`)
-
-| File | What / why |
-|---|---|
-| `BoardColumn.tsx` | One Kanban column — a titled, counted stack of `TicketCard`s with an empty state. |
-| `AssigneeDropdown.tsx` | Agent control on a card: reassign the developer → `patchTicket` (PATCH). |
-| `CreateTicketPanel.tsx` | Agent-only modal form (title/description/category/priority/assignee/estimate) → `createTicket` (POST). |
-
-### Auth components (`src/components/auth/`)
-
-| File | What / why |
-|---|---|
-| `LoginForm.tsx` | Email/password form; dispatches `login`, redirects by role on success. |
-| `RouteGuard.tsx` | Wraps protected pages: restores the session on load, redirects unauth → `/login`, optional role gating. |
+Each reusable `ui/` and `tickets/` component has a colocated `*.stories.tsx`.
 
 ### Storybook (`.storybook/`)
 
-| File | What / why |
-|---|---|
-| `main.ts` | Storybook config (story globs, addons). |
-| `preview.tsx` | Loads Bootstrap CSS + `theme.scss` so stories render on-brand. |
+`main.ts` (story globs + addons) and `preview.tsx` (loads Bootstrap + theme so stories render on-brand).
 
 ---
 
-## Known extras (from `npx storybook init`, safe to trim)
-
-- `src/stories/` — Storybook's demo examples (Button/Header/Page + assets). Not used by the app.
-- `vitest.config.ts`, `vitest.shims.d.ts` — a browser component-testing rig; optional for this project.
-- `debug-storybook.log`, `tsconfig.tsbuildinfo` — logs/caches (gitignored).
-
----
-
-## Conventions
+## Notes
 
 - Interactive components are client components (`"use client"`).
 - Import shared components from `@/components/...`; never re-create a button/card/avatar.
-- One file = one owner (see the workplan). Shared foundation (`types`, `lib`, `store`) is
-  coordinated, not edited ad hoc.
+- One file = one owner (see the workplan). Shared foundation (`types`, `lib`, `store`) is coordinated.
 - Add a new endpoint in `api.ts` only — pair a real call with a mock in `endpoint(real, mock)`.
+- `DESIGNATIONS` must match the backend's whitelist exactly (registration validates against it) —
+  candidate to make data-driven via a future `GET /designations`.
+- Optional cleanup still available: the Vitest/Playwright test rig (`vitest.config.ts`,
+  `vitest.shims.d.ts` + related devDeps) is unused for this project.

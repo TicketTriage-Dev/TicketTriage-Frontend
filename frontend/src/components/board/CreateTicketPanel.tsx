@@ -155,6 +155,7 @@ export function CreateTicketPanel({ show, onHide, categories, developers }: Crea
               {developers.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
+                  {d.designation ? ` — ${d.designation}` : ""}
                 </option>
               ))}
             </Form.Select>

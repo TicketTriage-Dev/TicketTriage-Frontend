@@ -13,6 +13,44 @@
 > Running record of my completed phases/tasks. **Newest entry first.** Add an entry
 > whenever a phase or task is finished: what was done and anything carried over.
 
+### 2026-07-16 — Auth live fixes + logout + cleanup
+
+- **Logout** — `AppShell` dispatches the `logout` thunk and redirects to `/login`; `TopBar` got an
+  optional `onLogout` prop + "Log out" button.
+- **Session-expired bug (cross-site cookies)** — backend sets `SameSite=Lax` cookies, so the browser
+  dropped them cross-origin (localhost → tunnel) → every post-login call 401'd. Fixed in dev with a
+  **Next.js proxy**: `/backend/*` → `BACKEND_ORIGIN` (same-origin, cookies stick, no CORS). Env is now
+  `BACKEND_ORIGIN` + `NEXT_PUBLIC_API_URL=/backend`. Real fix is backend-side (`SameSite=None; Secure`
+  + `Access-Control-Allow-Credentials`) — flagged to Nishita.
+- **Designation validation** — backend introduced a strict whitelist; synced `DESIGNATIONS` to its
+  exact strings ("Frontend Developer", …). Also made `api.ts` surface `data.errors` so validation
+  messages are actionable, not just "Validation failed". Aligned mock designations.
+- **Selector warning** — memoized `selectByStatus` / `selectMyTickets` with `createSelector`.
+- **Cleanup** — removed Storybook demo boilerplate (`src/stories/`), `debug-storybook.log`, unused
+  `STATUS_LABELS` and the unused `setUser` action. `tsc` clean.
+
+### 2026-07-16 — Auth UX: registration + modern login, designations
+
+**Team decisions folded in:** designations are now a **predefined list** (no free text) picked
+from a dropdown at registration; the assignee picker shows the designation beside the name (no
+filter); registration is **in frontend scope**.
+
+**Built (all reusing existing components — Button, Form, palette; one small shared `AuthLayout`):**
+- `constants/DESIGNATIONS` (+ `Designation` type) — the predefined list. Swap to a
+  `GET /designations` fetch later if it goes data-driven (like categories).
+- `Employee.designation` is now `string | null` (null for agents, per backend); mock agent aligned.
+- `authSlice.register` thunk — registers then auto-logs-in so cookies are set.
+- `components/auth/RegisterForm` (name/email/password + designation `<select>`) → redirects by role.
+- `components/auth/AuthLayout` — shared navy brand panel + form card; both `/login` and `/register`
+  use it. Login page restyled to the modern two-column look.
+- `/register` page added. Login ↔ register cross-links.
+- `CreateTicketPanel` + `EditTicketPanel` assignee options now show `{name} — {designation}`.
+- `tsc` clean; `/login`, `/register`, `/board`, `/queue` all serve 200.
+
+**Open items:** (1) confirm the exact `DESIGNATIONS` strings with Nishita so FE/BE match; (2)
+decide DB-table vs constant for the list long-term; (3) register response doesn't set cookies, so
+we register-then-login — confirm that's fine with the backend.
+
 ### 2026-07-16 — Day 2: Board vertical
 
 **Built the triage board (agent flow):**

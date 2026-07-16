@@ -104,7 +104,12 @@ async function request<T>(
 
   const status = typeof body?.status === "number" ? body.status : res.status;
   if (!res.ok || status >= 400) {
-    throw new ApiClientError(status, "API_ERROR", body?.msg ?? `Request to ${path} failed.`);
+    // Surface field-level validation errors (data.errors) so messages are actionable,
+    // not just a generic "Validation failed".
+    const errors = (body?.data as { errors?: Record<string, string> } | undefined)?.errors;
+    const detail = errors ? Object.values(errors).join(" ") : null;
+    const msg = body?.msg ?? `Request to ${path} failed.`;
+    throw new ApiClientError(status, "API_ERROR", detail ? `${msg}: ${detail}` : msg);
   }
   return body?.data as T;
 }

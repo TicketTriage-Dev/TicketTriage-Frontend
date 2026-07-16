@@ -1,7 +1,7 @@
 // Tickets slice (owned by Soham; read by board & queue).
 // fetch / create / patch thunks + selectors. Board groups by status;
 // queue filters by assignee via selectMyTickets.
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
 import { api, ApiClientError } from "@/lib/api";
 import type {
   CreateTicketInput,
@@ -104,15 +104,20 @@ export const selectAllTickets = (s: RootState) => s.tickets.items;
 export const selectTicketsStatus = (s: RootState) => s.tickets.status;
 export const selectTicketsError = (s: RootState) => s.tickets.error;
 
-/** Tickets in a given column (board). Agreed signature: (state, status). */
-export const selectByStatus = (state: RootState, status: TicketStatus): Ticket[] =>
-  state.tickets.items.filter((t) => t.status === status);
+/**
+ * Tickets in a given column (board). Agreed signature: (state, status).
+ * Memoized so it returns a stable array reference (avoids rerender churn).
+ */
+export const selectByStatus = createSelector(
+  [(s: RootState) => s.tickets.items, (_s: RootState, status: TicketStatus) => status],
+  (items, status) => items.filter((t) => t.status === status),
+);
 
 /**
  * The current developer's own tickets (for /queue). Cross-slice: reads the
- * logged-in user from auth, so callers don't pass an id.
+ * logged-in user from auth, so callers don't pass an id. Memoized for a stable ref.
  */
-export const selectMyTickets = (state: RootState): Ticket[] => {
-  const userId = state.auth.user?.id;
-  return userId == null ? [] : state.tickets.items.filter((t) => t.assigned_to === userId);
-};
+export const selectMyTickets = createSelector(
+  [(s: RootState) => s.tickets.items, (s: RootState) => s.auth.user?.id],
+  (items, userId) => (userId == null ? [] : items.filter((t) => t.assigned_to === userId)),
+);

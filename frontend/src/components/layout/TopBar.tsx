@@ -1,15 +1,17 @@
 "use client";
 
-import { Form } from "react-bootstrap";
+import { Button, Form } from "react-bootstrap";
 import { Avatar } from "@/components/ui/Avatar";
 
 interface TopBarProps {
-  /** Current user's name — drives the letter avatar + label. Wired to auth later. */
+  /** Current user's name — drives the letter avatar + label. */
   userName?: string;
+  /** When provided, renders a "Log out" button. */
+  onLogout?: () => void;
 }
 
-/** Top bar: search box (with icon) on the left, current-user avatar on the right. */
-export function TopBar({ userName }: TopBarProps) {
+/** Top bar: search box (with icon) on the left, current-user avatar + logout on the right. */
+export function TopBar({ userName, onLogout }: TopBarProps) {
   const name = userName?.trim() ?? "";
 
   return (
@@ -59,6 +61,11 @@ export function TopBar({ userName }: TopBarProps) {
           <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--navy)" }}>{name}</span>
         )}
         <Avatar name={name || "?"} size={36} />
+        {onLogout && (
+          <Button variant="outline-secondary" size="sm" onClick={onLogout}>
+            Log out
+          </Button>
+        )}
       </div>
     </header>
   );

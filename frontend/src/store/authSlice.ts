@@ -1,8 +1,8 @@
 // Auth slice (owned by Soham). Cookie-based sessions — no token is stored in JS;
 // "logged in" simply means `user` is set. login/logout/restoreSession thunks.
-import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { api, ApiClientError } from "@/lib/api";
-import type { LoginInput, User } from "@/types";
+import type { LoginInput, RegisterInput, User } from "@/types";
 
 export interface AuthState {
   user: User | null;
@@ -30,6 +30,20 @@ export const login = createAsyncThunk<User, LoginInput, { rejectValue: string }>
   },
 );
 
+/** Register a new account, then log in so the session (cookies) is established. */
+export const register = createAsyncThunk<User, RegisterInput, { rejectValue: string }>(
+  "auth/register",
+  async (input, { rejectWithValue }) => {
+    try {
+      await api.register(input);
+      return await api.login({ email: input.email, password: input.password });
+    } catch (err) {
+      const message = err instanceof ApiClientError ? err.message : "Registration failed. Try again.";
+      return rejectWithValue(message);
+    }
+  },
+);
+
 /** Restore the session on app load (cookie is sent automatically; refreshes if needed). */
 export const restoreSession = createAsyncThunk<User | null>("auth/restore", async () => {
   try {
@@ -51,12 +65,7 @@ export const logout = createAsyncThunk("auth/logout", async () => {
 const authSlice = createSlice({
   name: "auth",
   initialState,
-  reducers: {
-    setUser(state, action: PayloadAction<User>) {
-      state.user = action.payload;
-      state.status = "authenticated";
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(login.pending, (state) => {
@@ -70,6 +79,18 @@ const authSlice = createSlice({
       .addCase(login.rejected, (state, action) => {
         state.status = "error";
         state.error = action.payload ?? "Login failed.";
+      })
+      .addCase(register.pending, (state) => {
+        state.status = "loading";
+        state.error = null;
+      })
+      .addCase(register.fulfilled, (state, action) => {
+        state.status = "authenticated";
+        state.user = action.payload;
+      })
+      .addCase(register.rejected, (state, action) => {
+        state.status = "error";
+        state.error = action.payload ?? "Registration failed.";
       })
       .addCase(restoreSession.fulfilled, (state, action) => {
         state.user = action.payload;
@@ -86,5 +107,4 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUser } = authSlice.actions;
 export default authSlice.reducer;
