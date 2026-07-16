@@ -14,6 +14,17 @@
 > Add an entry whenever a phase or task is finished: what was done, commit hashes,
 > and anything carried over. This is a human-readable record separate from git history.
 
+### 2026-07-16 — Day 1 shell visuals (Day 1 COMPLETE ✅)
+
+**Completed:**
+- Finished the **app-shell visuals** (took `components/layout/` over from Soham's Phase 0 skeletons):
+  - **Sidebar** — navy surface, gold active state, hover states, and hand-built outline nav icons (board / queue / team / settings) — no icon dependency added.
+  - **TopBar** — search box with an inline search icon; wired in the shared **Avatar** (letter avatar) plus the current user's name.
+  - Added Storybook stories: `Layout/Sidebar`, `Layout/TopBar`, `Layout/AppShell` (full-shell preview). `tsc --noEmit` + `build-storybook` both clean.
+- To commit: `Sidebar.tsx` + `TopBar.tsx` (modified) and 3 new `layout/*.stories.tsx`.
+
+**Day 1 status: COMPLETE ✅** — UI kit ✅ · TicketCard ✅ · shell visuals ✅.
+
 ### 2026-07-15 — Day 1
 
 **Completed:**
