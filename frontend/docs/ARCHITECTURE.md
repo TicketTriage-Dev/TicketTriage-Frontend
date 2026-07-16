@@ -12,22 +12,17 @@ navy/gold palette) · Storybook · a typed API client with a mock-data fallback.
 ## How data flows
 
 ```
-Component → Redux thunk (slice) → api.ts → { /backend proxy → real backend  |  mock layer }
-                                              (cookies, same-origin)            (mockData.ts)
+Component → Redux thunk (slice) → api.ts → { real backend  |  mock layer }
+                                              (cookies)        (mockData.ts)
 ```
 
 - Components never call `fetch` directly — they dispatch thunks or read the store.
 - `lib/api.ts` is the ONLY place with network logic. It picks the real backend or the mock
   layer based on `NEXT_PUBLIC_USE_MOCK`, so nothing else changes when the backend comes online.
 - Auth is **cookie-based** (httpOnly `access_token` + `refresh_token`); no token is kept in JS.
-
-### Dev proxy (why `/backend`)
-
-The backend sets its auth cookies as `SameSite=Lax`, so a browser on `localhost:3000` won't send
-them to a different origin (the tunnel). To keep cookies working in dev **without backend/CORS
-changes**, `next.config.ts` proxies `/backend/*` → `BACKEND_ORIGIN` server-side, so every API call
-looks same-origin to the browser. Set `NEXT_PUBLIC_API_URL=/backend` and `BACKEND_ORIGIN=<tunnel>/ticketTriage`.
-*(Production fix belongs on the backend: `SameSite=None; Secure` cookies + `Access-Control-Allow-Credentials`.)*
+  The client sets `credentials:"include"`; the backend must send CORS with
+  `Access-Control-Allow-Credentials: true` and set cookies `SameSite=None; Secure` for
+  cross-origin dev to work.
 
 ---
 
@@ -39,8 +34,8 @@ looks same-origin to the browser. Set `NEXT_PUBLIC_API_URL=/backend` and `BACKEN
 |---|---|
 | `package.json` | Dependencies + scripts (`dev`, `build`, `storybook`). |
 | `tsconfig.json` | TypeScript config; defines the `@/*` → `src/*` import alias. |
-| `next.config.ts` | React Compiler on + the **dev proxy rewrite** (`/backend/*` → `BACKEND_ORIGIN`). |
-| `.env.local` | **Gitignored.** `BACKEND_ORIGIN`, `NEXT_PUBLIC_API_URL` (`/backend`), `NEXT_PUBLIC_USE_MOCK`. |
+| `next.config.ts` | Next.js config (React Compiler on). |
+| `.env.local` | **Gitignored.** `NEXT_PUBLIC_API_URL` (backend base) + `NEXT_PUBLIC_USE_MOCK`. |
 | `.env.example` | Committed template of the env vars for teammates to copy. |
 
 ### Routing (`src/app/`)

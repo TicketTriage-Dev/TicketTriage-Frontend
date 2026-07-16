@@ -16,15 +16,14 @@ Open [http://localhost:3000](http://localhost:3000). The root redirects to `/log
 ### Environment (`.env.local`)
 
 ```
-BACKEND_ORIGIN=<backend-base-url>/ticketTriage   # e.g. a Cloudflare tunnel URL
-NEXT_PUBLIC_API_URL=/backend                     # calls go through the same-origin dev proxy
-NEXT_PUBLIC_USE_MOCK=false                        # true = run entirely on mock data, no backend
+NEXT_PUBLIC_API_URL=<backend-base-url>/ticketTriage   # e.g. a Cloudflare tunnel URL
+NEXT_PUBLIC_USE_MOCK=false                             # true = run entirely on mock data, no backend
 ```
 
-The app calls the relative `/backend/*`, which `next.config.ts` proxies to `BACKEND_ORIGIN`
-server-side. This keeps the backend's `SameSite=Lax` auth cookies working in dev (same-origin) —
-no CORS setup needed. Set `NEXT_PUBLIC_USE_MOCK=true` to develop with no backend at all.
-Restart `npm run dev` after any `.env.local` change.
+The client calls the backend directly. For cross-origin cookie auth to work, the backend must
+send CORS (`Access-Control-Allow-Credentials: true`, exact `Access-Control-Allow-Origin`) and set
+its auth cookies `SameSite=None; Secure`. Set `NEXT_PUBLIC_USE_MOCK=true` to develop with no
+backend at all. Restart `npm run dev` after any `.env.local` change.
 
 ## Structure
 
