@@ -47,7 +47,7 @@ matching platform) so tickets read like a real backlog.
 ## 2. Scope
 
 **In scope**
-- Auth (login) with JWT, two roles: `agent`, `developer`.
+- Auth (login) via **cookie-based sessions** (short-lived access token + rotating refresh token), two roles: `agent`, `developer`.
 - Agent: create ticket, set category, set priority (manual), assign a developer.
 - Developer: view own queue, change ticket status.
 - Triage board (Kanban: To do / In progress / Done) — shared view.
@@ -170,7 +170,7 @@ lib/            api.ts (fetch client) + mockData.ts (fixtures until backend is l
 hooks/          reusable hooks
 store/          Redux store + slices (authSlice, ticketsSlice)
 constants/      statuses, priorities, categories, nav items
-types/          shared TS types (Ticket, Employee, Category, User, ApiResult)
+types/          shared TS types (Ticket, Employee, Category, User, ApiEnvelope)
 styles/         theme tokens (palette above), fonts
 ```
 
