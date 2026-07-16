@@ -9,7 +9,7 @@ interface BoardColumnProps {
   tickets: Ticket[];
   categoryName: (id: number) => string | undefined;
   assigneeName: (id: number | null) => string | null;
-  /** Per-ticket control rendered in the card footer (e.g. AssigneeDropdown). */
+  /** Per-ticket control rendered in the card footer (e.g. the agent Edit button). */
   renderActions?: (ticket: Ticket) => ReactNode;
 }
 

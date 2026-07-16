@@ -48,8 +48,15 @@ export interface CreateTicketInput {
   time_to_complete?: string | number | null;
 }
 
-/** Fields that may be updated via PATCH. */
+/**
+ * Fields that may be updated via PATCH /tickets/{id}. All optional — send only
+ * what changed. `status` is the developer's control (queue); the agent's Edit
+ * modal sends the rest.
+ */
 export interface UpdateTicketInput {
+  name?: string;
+  description?: string;
+  category_id?: number;
   status?: TicketStatus;
   priority?: Priority;
   assigned_to?: number | null;

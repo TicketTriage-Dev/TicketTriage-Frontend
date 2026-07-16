@@ -4,7 +4,7 @@
 // queue (Parinita). Presentational: it takes a Ticket plus the already-resolved
 // category name and assignee name (the parent looks those up from IDs), so the
 // card stays free of the data layer. An optional `actions` slot lets each caller
-// drop in its own control (board -> AssigneeDropdown, queue -> StatusControl)
+// drop in its own control (board -> Edit button, queue -> StatusControl)
 // without changing this component.
 import type { KeyboardEvent, ReactNode } from "react";
 import { Card } from "react-bootstrap";
@@ -22,7 +22,7 @@ export interface TicketCardProps {
   assigneeName?: string | null;
   /** Optional whole-card click (e.g. open a detail view). Makes the card keyboard-focusable. */
   onClick?: () => void;
-  /** Optional control rendered in the footer — StatusControl (queue) or AssigneeDropdown (board). */
+  /** Optional control rendered in the footer — StatusControl (queue) or Edit button (board). */
   actions?: ReactNode;
 }
 

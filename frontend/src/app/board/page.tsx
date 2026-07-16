@@ -5,8 +5,8 @@ import { Alert, Spinner } from "react-bootstrap";
 import { RouteGuard } from "@/components/auth/RouteGuard";
 import { AppShell } from "@/components/layout/AppShell";
 import { BoardColumn } from "@/components/board/BoardColumn";
-import { AssigneeDropdown } from "@/components/board/AssigneeDropdown";
 import { CreateTicketPanel } from "@/components/board/CreateTicketPanel";
+import { EditTicketPanel } from "@/components/board/EditTicketPanel";
 import { Button } from "@/components/ui/Button";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -17,7 +17,7 @@ import {
 } from "@/store/ticketsSlice";
 import { api } from "@/lib/api";
 import { STATUSES } from "@/constants";
-import type { Category, Employee } from "@/types";
+import type { Category, Employee, Ticket } from "@/types";
 
 function BoardInner() {
   const dispatch = useAppDispatch();
@@ -29,6 +29,7 @@ function BoardInner() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [developers, setDevelopers] = useState<Employee[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [editing, setEditing] = useState<Ticket | null>(null);
 
   const isAgent = user?.role === "agent";
 
@@ -81,11 +82,9 @@ function BoardInner() {
               renderActions={
                 isAgent
                   ? (t) => (
-                      <AssigneeDropdown
-                        ticketId={t.ticket_id}
-                        assignedTo={t.assigned_to}
-                        developers={developers}
-                      />
+                      <Button variant="outline-secondary" size="sm" onClick={() => setEditing(t)}>
+                        Edit
+                      </Button>
                     )
                   : undefined
               }
@@ -95,12 +94,21 @@ function BoardInner() {
       )}
 
       {isAgent && (
-        <CreateTicketPanel
-          show={showCreate}
-          onHide={() => setShowCreate(false)}
-          categories={categories}
-          developers={developers}
-        />
+        <>
+          <CreateTicketPanel
+            show={showCreate}
+            onHide={() => setShowCreate(false)}
+            categories={categories}
+            developers={developers}
+          />
+          <EditTicketPanel
+            show={editing != null}
+            ticket={editing}
+            onHide={() => setEditing(null)}
+            categories={categories}
+            developers={developers}
+          />
+        </>
       )}
     </AppShell>
   );
