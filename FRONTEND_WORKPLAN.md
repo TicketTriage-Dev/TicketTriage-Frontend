@@ -73,7 +73,26 @@ Owns: `store/authSlice.ts`, `store/ticketsSlice.ts`, `app/login/`, `app/board/`,
 - `ticketsSlice` — `fetchTickets`, `createTicket`, `patchTicket` thunks + selectors (grouped by
   status). *Owns this slice because both board & queue read it — expose clean selectors.*
 - `/board` — Kanban 3 columns (To do / In progress / Done), grouping tickets by status.
-- `CreateTicketPanel` (POST) + `AssigneeDropdown` (PATCH) — agent-only.
+- `CreateTicketPanel` (POST) — agent-only ticket creation (assignee optional at creation).
+
+> **Design change (2026-07-16) — assignment consolidated into an Edit modal.** After a
+> discussion between Nishita, Parinita, and Soham, the standalone per-card assign control is
+> being replaced by a full Edit-ticket modal, so assignment lives in exactly two places:
+> **create** and **edit**. Net change is **one component out, one in** — board layout, cards,
+> `ticketsSlice`, the API, and types are all unchanged.
+>
+> **Soham's task — Edit ticket (agent-only):**
+> - **Remove:** `components/board/AssigneeDropdown.tsx` + its import and the `renderActions`
+>   wiring in `app/board/page.tsx` (currently ~lines 81-91).
+> - **Add:** `components/board/EditTicketPanel.tsx` — a modal ~90% copied from
+>   `CreateTicketPanel`, but **prefilled** with the ticket's current values and dispatching
+>   `patchTicket({ id, patch })` (PATCH) instead of `createTicket` (POST). Editable fields:
+>   **assignee, priority, category, title, description — NOT status** (status stays the
+>   developer's job via `/queue`).
+> - **Wire:** an agent-only "Edit" action on each board card that opens the modal for that
+>   ticket, plus the open/close state in `app/board/page.tsx`.
+> - **Backend:** no new endpoint — reuses the existing `PATCH /tickets/{id}` (CLAUDE.md §5).
+> - Optional: an `EditTicketPanel` Storybook story, to match the rest.
 
 ### Parinita — Component library + Queue (the developer flow)
 
