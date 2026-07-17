@@ -159,8 +159,8 @@ The real-API cutover is **done and verified** (Soham, in `lib/api.ts` + `tickets
   > `PRIORITY_BOLTS` stay lowercase — `PriorityBolt` is untouched.
 - **Both:** end-to-end demo rehearsal (agent creates+assigns → developer sees it in `/queue` →
   moves to Done → board reflects).
-- ⚠️ **Backend (Nishita):** cookies are `SameSite=None` **without `Secure`** — browsers require
-  `Secure` for cross-site cookies, so sessions can still drop in-browser until she adds it.
+- ✅ **Backend (Nishita):** cookies now `SameSite=None; Secure` — cross-site session drop is
+  resolved (done 2026-07-17).
 
 ---
 

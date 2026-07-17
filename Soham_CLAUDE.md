@@ -38,7 +38,7 @@ or Parinita's files (we chose *adapt-in-the-client* over *adopt-everywhere*).
   `/developers` all return the shapes the adapter expects. `tsc --noEmit` clean.
 
 **Left to complete (Day 3):** root `README` (currently a stub); board create/edit validation +
-loading/error polish; demo rehearsal. ⚠️ Backend still owes the `Secure` cookie flag (see below).
+loading/error polish; demo rehearsal. *(Backend `Secure` cookie flag — done by Nishita 2026-07-17.)*
 
 ### 2026-07-16 — Auth live fixes + logout + cleanup
 

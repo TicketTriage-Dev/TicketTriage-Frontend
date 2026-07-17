@@ -33,8 +33,8 @@ What this means for you:
    was removed earlier).
 4. **README** — the frontend section / developer walkthrough; rehearse the demo.
 
-⚠️ **Backend still owes the `Secure` cookie flag** (`SameSite=None` needs `Secure`), so an in-browser
-session can still drop until Nishita adds it — not a frontend bug.
+✅ **Cookies are now `SameSite=None; Secure`** (Nishita, 2026-07-17) — the cross-site session-drop
+issue is resolved; no frontend action needed.
 
 ---
 
