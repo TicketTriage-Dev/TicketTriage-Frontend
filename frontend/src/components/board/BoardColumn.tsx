@@ -60,8 +60,10 @@ export function BoardColumn({
             <TicketCard
               key={t.ticket_id}
               ticket={t}
-              categoryName={categoryName(t.category_id)}
-              assigneeName={assigneeName(t.assigned_to)}
+              // Prefer the name the backend sends inline; fall back to the id→name
+              // resolver (used by mock data, which has no inline names).
+              categoryName={t.category_name ?? categoryName(t.category_id)}
+              assigneeName={t.assignee_name ?? assigneeName(t.assigned_to)}
               actions={renderActions?.(t)}
             />
           ))

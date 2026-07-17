@@ -13,6 +13,21 @@
 > Running record of my completed phases/tasks. **Newest entry first.** Add an entry
 > whenever a phase or task is finished: what was done and anything carried over.
 
+### 2026-07-17 — Post-demo bug fixes (board assignee + estimate) ✅
+
+Two issues caught while testing with Parinita:
+- **Board showed "Unassigned" for a ticket the developer saw in their queue.** The board was
+  rebuilding the assignee name via an id→name lookup against the separately-fetched `/developers`
+  list (fragile — misses if the list is incomplete). The backend already sends `assignee_name` /
+  `category_name` **inline on every ticket**, but the adapter was dropping them. Fix: carry both
+  through `adaptTicket` onto the `Ticket` (optional), and `BoardColumn` now prefers the inline name,
+  falling back to the resolver map for mock data. Robust regardless of the `/developers` list.
+- **Estimate (`time_to_complete`) was free text and displayed as a bare number.** Create/Edit now
+  use an integer `type="number"` input labelled "Estimate (hours)" and send an int; `TicketCard`
+  renders it as `⏱ 3h` (numeric → `{n}h`; legacy non-numeric like mock "1d" shown as-is). Also added
+  the estimate field to `EditTicketPanel` (+ `time_to_complete` in `UpdateTicketInput` / the PATCH
+  adapter) so an agent can correct it. `tsc` clean.
+
 ### 2026-07-17 — Mock→real cutover (tickets/categories/developers) ✅
 
 The backend published the ticket/category/employee routes, so I did the full cutover —

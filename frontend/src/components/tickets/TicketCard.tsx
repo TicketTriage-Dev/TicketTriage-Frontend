@@ -26,9 +26,20 @@ export interface TicketCardProps {
   actions?: ReactNode;
 }
 
+/**
+ * Render the estimate as a clear duration. The backend stores it as an integer
+ * number of hours, so `3` → "3h"; any non-numeric legacy value (mock "1d") is
+ * shown as-is. Returns null when there's nothing to show.
+ */
+function formatEstimate(value: string | number | null | undefined): string | null {
+  if (value == null || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? `${n}h` : String(value);
+}
+
 export function TicketCard({ ticket, categoryName, assigneeName, onClick, actions }: TicketCardProps) {
   const clickable = typeof onClick === "function";
-  const hasEstimate = ticket.time_to_complete != null && ticket.time_to_complete !== "";
+  const estimate = formatEstimate(ticket.time_to_complete);
 
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -71,12 +82,13 @@ export function TicketCard({ ticket, categoryName, assigneeName, onClick, action
         {/* Category + estimate */}
         <div className="d-flex align-items-center gap-2 flex-wrap mb-3">
           {categoryName && <CategoryTag name={categoryName} />}
-          {hasEstimate && (
+          {estimate && (
             <span
               className="text-muted"
+              title="Estimated time (hours)"
               style={{ fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.75rem" }}
             >
-              {ticket.time_to_complete}
+              ⏱ {estimate}
             </span>
           )}
         </div>

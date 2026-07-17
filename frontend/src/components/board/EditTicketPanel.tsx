@@ -24,6 +24,7 @@ const BLANK = {
   category_id: "",
   priority: "normal" as Priority,
   assigned_to: "",
+  time_to_complete: "",
 };
 
 /**
@@ -46,6 +47,7 @@ export function EditTicketPanel({ show, onHide, ticket, categories, developers }
         category_id: String(ticket.category_id),
         priority: ticket.priority,
         assigned_to: ticket.assigned_to != null ? String(ticket.assigned_to) : "",
+        time_to_complete: ticket.time_to_complete != null ? String(ticket.time_to_complete) : "",
       });
       setError(null);
     }
@@ -73,6 +75,7 @@ export function EditTicketPanel({ show, onHide, ticket, categories, developers }
           category_id: Number(form.category_id),
           priority: form.priority,
           assigned_to: form.assigned_to ? Number(form.assigned_to) : null,
+          time_to_complete: form.time_to_complete ? Math.trunc(Number(form.time_to_complete)) : null,
         },
       }),
     );
@@ -160,21 +163,36 @@ export function EditTicketPanel({ show, onHide, ticket, categories, developers }
           </Form.Group>
         </div>
 
-        <Form.Group controlId="edit-assignee">
-          <Form.Label>Assignee</Form.Label>
-          <Form.Select
-            value={form.assigned_to}
-            onChange={(e) => set("assigned_to", e.target.value)}
-          >
-            <option value="">Unassigned</option>
-            {developers.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-                {d.designation ? ` — ${d.designation}` : ""}
-              </option>
-            ))}
-          </Form.Select>
-        </Form.Group>
+        <div className="d-flex gap-3">
+          <Form.Group className="flex-fill" controlId="edit-assignee">
+            <Form.Label>Assignee</Form.Label>
+            <Form.Select
+              value={form.assigned_to}
+              onChange={(e) => set("assigned_to", e.target.value)}
+            >
+              <option value="">Unassigned</option>
+              {developers.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                  {d.designation ? ` — ${d.designation}` : ""}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+
+          <Form.Group className="flex-fill" controlId="edit-estimate">
+            <Form.Label>Estimate (hours)</Form.Label>
+            <Form.Control
+              type="number"
+              min={1}
+              step={1}
+              inputMode="numeric"
+              value={form.time_to_complete}
+              onChange={(e) => set("time_to_complete", e.target.value)}
+              placeholder="e.g. 3"
+            />
+          </Form.Group>
+        </div>
       </Form>
     </Modal>
   );

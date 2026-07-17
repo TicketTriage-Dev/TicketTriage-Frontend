@@ -173,6 +173,8 @@ function adaptTicket(r: RawTicket): Ticket {
     assigned_to: r.assignee_id ?? null,
     time_to_complete: r.time_to_complete ?? null,
     created_at: r.created_at,
+    category_name: r.category_name ?? null,
+    assignee_name: r.assignee_name ?? null,
   };
 }
 
@@ -205,6 +207,7 @@ function toUpdateBody(patch: UpdateTicketInput): Record<string, unknown> {
   if (patch.category_id !== undefined) body.category_id = patch.category_id;
   if (patch.assigned_to !== undefined) body.assignee_id = patch.assigned_to;
   if (patch.priority !== undefined) body.priority = fromPriority(patch.priority);
+  if (patch.time_to_complete !== undefined) body.time_to_complete = patch.time_to_complete;
   return body;
 }
 

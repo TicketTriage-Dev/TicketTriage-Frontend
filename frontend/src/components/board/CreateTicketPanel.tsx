@@ -57,7 +57,7 @@ export function CreateTicketPanel({ show, onHide, categories, developers }: Crea
         category_id: Number(form.category_id),
         priority: form.priority,
         assigned_to: form.assigned_to ? Number(form.assigned_to) : null,
-        time_to_complete: form.time_to_complete.trim() || null,
+        time_to_complete: form.time_to_complete ? Math.trunc(Number(form.time_to_complete)) : null,
       }),
     );
     setSubmitting(false);
@@ -162,11 +162,15 @@ export function CreateTicketPanel({ show, onHide, categories, developers }: Crea
           </Form.Group>
 
           <Form.Group className="flex-fill" controlId="ticket-estimate">
-            <Form.Label>Estimate</Form.Label>
+            <Form.Label>Estimate (hours)</Form.Label>
             <Form.Control
+              type="number"
+              min={1}
+              step={1}
+              inputMode="numeric"
               value={form.time_to_complete}
               onChange={(e) => set("time_to_complete", e.target.value)}
-              placeholder="e.g. 3h"
+              placeholder="e.g. 3"
             />
           </Form.Group>
         </div>

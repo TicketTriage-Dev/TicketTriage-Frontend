@@ -37,6 +37,13 @@ export interface Ticket {
   assigned_to: number | null; // Employee.id
   time_to_complete?: string | number | null;
   created_at: string;
+  /**
+   * Display names the backend sends inline on each ticket. Preferred over an
+   * id→name lookup (which can miss if the reference list is incomplete). Absent
+   * on mock data, so callers fall back to their resolver maps.
+   */
+  category_name?: string | null;
+  assignee_name?: string | null;
 }
 
 /** Payload the agent submits to create a ticket. */
@@ -61,6 +68,7 @@ export interface UpdateTicketInput {
   status?: TicketStatus;
   priority?: Priority;
   assigned_to?: number | null;
+  time_to_complete?: string | number | null;
 }
 
 /** Credentials for POST /auth/login. */
