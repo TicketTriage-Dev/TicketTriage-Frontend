@@ -58,7 +58,7 @@ export type Designation = (typeof DESIGNATIONS)[number];
 export const NAV_ITEMS: { href: string; label: string; roles: Role[] }[] = [
   { href: "/board", label: "Board", roles: ["agent", "developer"] },
   { href: "/queue", label: "My queue", roles: ["developer"] },
-  { href: "/team", label: "Team", roles: ["agent", "developer"] },
+  { href: "/team", label: "Team", roles: ["agent"] },
   { href: "/settings", label: "Settings", roles: ["agent", "developer"] },
 ];
 

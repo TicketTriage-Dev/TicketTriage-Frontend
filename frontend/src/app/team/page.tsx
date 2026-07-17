@@ -1,8 +1,9 @@
 "use client";
 
-// /team — developer roster (team decision 2026-07-17: real content, not a
-// placeholder). Lists developers from GET /developers via api.getEmployees.
-// Any authenticated user can view it.
+// /team — AGENT-only developer roster, each with their current workload (count
+// of non-Done assigned tickets). Workload is computed client-side from
+// GET /tickets + GET /developers: the /developers/me/workload endpoint is
+// "me"-only, so it can't give an agent per-developer numbers.
 import { useCallback, useEffect, useState } from "react";
 import { RouteGuard } from "@/components/auth/RouteGuard";
 import { AppShell } from "@/components/layout/AppShell";
@@ -15,6 +16,7 @@ import type { Employee } from "@/types";
 
 function TeamBody() {
   const [developers, setDevelopers] = useState<Employee[]>([]);
+  const [workload, setWorkload] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
@@ -23,7 +25,16 @@ function TeamBody() {
     setLoading(true);
     setError(null);
     try {
-      setDevelopers(await api.getEmployees("developer"));
+      const [devs, tickets] = await Promise.all([api.getEmployees("developer"), api.getTickets()]);
+      setDevelopers(devs);
+      // Open workload = tickets assigned to a dev that aren't Done yet.
+      const counts: Record<number, number> = {};
+      for (const t of tickets) {
+        if (t.assigned_to != null && t.status !== "Done") {
+          counts[t.assigned_to] = (counts[t.assigned_to] ?? 0) + 1;
+        }
+      }
+      setWorkload(counts);
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Failed to load the team.");
     } finally {
@@ -57,11 +68,12 @@ function TeamBody() {
           style={{
             display: "grid",
             gap: 14,
-            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
           }}
         >
           {developers.map((dev) => {
             const hover = hoveredId === dev.id;
+            const open = workload[dev.id] ?? 0;
             return (
               <div
                 key={dev.id}
@@ -81,7 +93,7 @@ function TeamBody() {
                 }}
               >
                 <Avatar name={dev.name} size={52} />
-                <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 5 }}>
+                <div style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
                   <div
                     style={{
                       fontWeight: 600,
@@ -109,6 +121,25 @@ function TeamBody() {
                     </span>
                   )}
                 </div>
+                <div
+                  style={{ textAlign: "center", flexShrink: 0, minWidth: 44 }}
+                  title={`${open} open ticket${open === 1 ? "" : "s"}`}
+                >
+                  <div
+                    style={{
+                      fontFamily: "var(--font-jetbrains-mono)",
+                      fontWeight: 700,
+                      fontSize: "1.15rem",
+                      lineHeight: 1,
+                      color: open > 0 ? "var(--navy)" : "var(--light-gray)",
+                    }}
+                  >
+                    {open}
+                  </div>
+                  <div className="text-muted" style={{ fontSize: "0.7rem", marginTop: 2 }}>
+                    open
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -121,7 +152,7 @@ function TeamBody() {
 export default function TeamPage() {
   const user = useAppSelector((s) => s.auth.user);
   return (
-    <RouteGuard>
+    <RouteGuard roles={["agent"]}>
       <AppShell userName={user?.name}>
         <TeamBody />
       </AppShell>
