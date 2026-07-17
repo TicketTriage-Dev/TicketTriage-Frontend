@@ -30,10 +30,14 @@ function errMessage(err: unknown, fallback: string): string {
 export const fetchTickets = createAsyncThunk<
   Ticket[],
   { status?: TicketStatus; assigned_to?: number } | undefined,
-  { rejectValue: string }
->("tickets/fetch", async (filters, { rejectWithValue }) => {
+  { state: RootState; rejectValue: string }
+>("tickets/fetch", async (filters, { getState, rejectWithValue }) => {
   try {
-    return await api.getTickets(filters);
+    // Developers may only read their own queue (GET /tickets/mine); the full
+    // board (GET /tickets) is agent-only. Route by role so both personas share
+    // this one thunk without hitting a 403.
+    const role = getState().auth.user?.role;
+    return role === "developer" ? await api.getMyTickets() : await api.getTickets(filters);
   } catch (err) {
     return rejectWithValue(errMessage(err, "Failed to load tickets."));
   }

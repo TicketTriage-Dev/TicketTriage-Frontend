@@ -13,6 +13,33 @@
 > Running record of my completed phases/tasks. **Newest entry first.** Add an entry
 > whenever a phase or task is finished: what was done and anything carried over.
 
+### 2026-07-17 — Mock→real cutover (tickets/categories/developers) ✅
+
+The backend published the ticket/category/employee routes, so I did the full cutover —
+**all contained in `lib/api.ts` + one thunk**, zero changes to components, types, constants,
+or Parinita's files (we chose *adapt-in-the-client* over *adopt-everywhere*).
+
+- **Adapter layer in `lib/api.ts`** — the backend shape ≠ our frontend types, so I map it in
+  the one network seam: `id→ticket_id`, `title→name`, `assignee_id→assigned_to`, `category.id→
+  category_id`, and priority casing `Normal↔normal` (`toPriority`/`fromPriority`). List payloads
+  are unwrapped from their envelope (`data.tickets` / `data.categories` / `data.developers`) via
+  a defensive `unwrapList` (tolerates a bare array too). `adaptEmployee` defaults `email`/`role`
+  because `/developers` objects only carry `{id, name, designation}`.
+- **Role-aware `fetchTickets`** (`ticketsSlice`) — developers → `GET /tickets/mine`, agents →
+  `GET /tickets`. Fixes the `/queue` **403 "requires role agent"** (it was calling the agent-only
+  list). One thunk, both personas.
+- **Status vs edit routing** (`updateTicket`) — a **status-only** patch → `PATCH /tickets/{id}/status`
+  (developer-permitted); any other patch → `PATCH /tickets/{id}` (agent edit). Fixes the developer
+  status change 403.
+- **Create/edit payloads** now send `title`/`assignee_id`/capitalized `priority`; responses unwrap
+  `data.ticket`. **Assignee picker** moved `/employees` → `GET /developers`.
+- **Board crash fixed** — the un-unwrapped `{tickets:[...]}` object was reaching `tickets.filter(...)`.
+- **Verified live** against the tunnel (agent1@triage.local): `/tickets`, `/categories`,
+  `/developers` all return the shapes the adapter expects. `tsc --noEmit` clean.
+
+**Left to complete (Day 3):** root `README` (currently a stub); board create/edit validation +
+loading/error polish; demo rehearsal. ⚠️ Backend still owes the `Secure` cookie flag (see below).
+
 ### 2026-07-16 — Auth live fixes + logout + cleanup
 
 - **Logout** — `AppShell` dispatches the `logout` thunk and redirects to `/login`; `TopBar` got an

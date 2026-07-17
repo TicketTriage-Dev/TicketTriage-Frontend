@@ -1,7 +1,8 @@
 # TicketMatchr — Frontend
 
-Next.js (App Router) + TypeScript + Tailwind CSS frontend for the TicketMatchr
-ticket triage tool. See [`../CLAUDE.md`](../CLAUDE.md) for the full project brief.
+Next.js (App Router) + TypeScript + Redux Toolkit + react-bootstrap frontend for the
+TicketMatchr ticket triage tool. See [`../CLAUDE.md`](../CLAUDE.md) for the full project
+brief and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the file-by-file map.
 
 ## Getting started
 

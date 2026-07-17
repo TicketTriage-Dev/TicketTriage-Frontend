@@ -61,10 +61,11 @@ Nobody starts their feature until this is pushed. Deliverables:
 Owns: `store/authSlice.ts`, `store/ticketsSlice.ts`, `app/login/`, `app/board/`,
 `components/auth/`, `components/board/`.
 
-> **Status (2026-07-16):** the auth vertical is DONE against Nishita's real cookie-based API —
-> `authSlice` (login/logout/restoreSession), `/login`, `LoginForm`, `RouteGuard`, and the
-> `lib/api.ts` refresh interceptor. **`ticketsSlice` + `/board` are still pending**, so Parinita's
-> `/queue` reads tickets through the mock `api.*` methods for now (swap to the slice when it lands).
+> **Status (2026-07-17):** auth vertical + board + the **mock→real cutover** are all DONE against
+> Nishita's live backend. `authSlice`, `ticketsSlice`, `/board` (create + edit/assign), the refresh
+> interceptor, and the **backend adapter in `lib/api.ts`** (maps `id`/`title`/`assignee_id` +
+> capitalized priority + nested envelopes → our types; role-aware `fetchTickets`; status vs edit
+> PATCH routing). Verified live. Remaining on Soham: root `README`, board form-validation polish.
 
 - `authSlice` — login/logout/restoreSession thunks, current user. **Cookie-based** sessions (no
   localStorage token); a refresh interceptor in `lib/api.ts` retries once on a 401 and replays.
@@ -142,6 +143,24 @@ If an interface isn't ready, stub it and keep going — swap the real one in whe
   controls, wire against mock data.
 - **Day 3:** both → empty/error/loading states, validation, responsive/keyboard polish, swap
   mock layer for the real API once backend is up, README + demo rehearsal.
+
+### Day 3 — what's left (as of 2026-07-17, post-cutover)
+
+The real-API cutover is **done and verified** (Soham, in `lib/api.ts` + `ticketsSlice`), so
+`/board` and `/queue` now run on the live backend with no component changes. Remaining:
+
+- **Soham:** root `README` (currently a stub); create/edit form validation (`title` + `assignee`
+  required) + board loading/error polish.
+- **Parinita:** `/queue` polish — disable `StatusControl` while a status patch is in flight,
+  keyboard focus, responsive grid check. Then **verify `/queue` against the live backend** (it maps
+  to our existing `Ticket` shape via the adapter, so your page should need **no change**). Storybook
+  housekeeping (confirm every real component still has a story) + the frontend `README` section.
+  > **No priority-casing sweep needed:** we chose *adapt-in-the-client*, so `PRIORITIES` /
+  > `PRIORITY_BOLTS` stay lowercase — `PriorityBolt` is untouched.
+- **Both:** end-to-end demo rehearsal (agent creates+assigns → developer sees it in `/queue` →
+  moves to Done → board reflects).
+- ⚠️ **Backend (Nishita):** cookies are `SameSite=None` **without `Secure`** — browsers require
+  `Secure` for cross-site cookies, so sessions can still drop in-browser until she adds it.
 
 ---
 

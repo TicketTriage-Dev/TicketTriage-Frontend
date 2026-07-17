@@ -114,6 +114,100 @@ async function request<T>(
   return body?.data as T;
 }
 
+// --- Backend adapter --------------------------------------------------------
+// The real backend speaks a different shape than our frontend types (id vs
+// ticket_id, title vs name, assignee_id vs assigned_to, capitalized priority,
+// list payloads nested under data.tickets/categories/developers). We map it
+// here, in the one network seam, so NOTHING downstream (types, store, cards,
+// constants) has to change. Status casing already matches (Assigned/In Progress/Done).
+
+interface RawTicket {
+  id: number;
+  title: string;
+  description: string;
+  status: TicketStatus;
+  priority: string; // "Normal" | "Urgent" | "Severe"
+  time_to_complete: number | string | null;
+  category_id: number;
+  category_name?: string;
+  reporter_id?: number;
+  reporter_name?: string;
+  assignee_id: number | null;
+  assignee_name?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+interface RawCategory {
+  id: number;
+  name: string;
+}
+
+interface RawEmployee {
+  id: number;
+  name: string;
+  email?: string;
+  role?: Role;
+  designation?: string | null;
+}
+
+/** Backend "Normal"/"Urgent"/"Severe" → our lowercase Priority (unknown → normal). */
+function toPriority(raw: string | undefined): Priority {
+  const v = (raw ?? "").toLowerCase();
+  return v === "urgent" || v === "severe" ? v : "normal";
+}
+
+/** Our lowercase Priority → backend "Normal"/"Urgent"/"Severe" for request bodies. */
+function fromPriority(p: Priority): string {
+  return p.charAt(0).toUpperCase() + p.slice(1);
+}
+
+function adaptTicket(r: RawTicket): Ticket {
+  return {
+    ticket_id: r.id,
+    name: r.title,
+    description: r.description,
+    category_id: r.category_id,
+    status: r.status,
+    priority: toPriority(r.priority),
+    assigned_to: r.assignee_id ?? null,
+    time_to_complete: r.time_to_complete ?? null,
+    created_at: r.created_at,
+  };
+}
+
+function adaptCategory(r: RawCategory): Category {
+  return { category_id: r.id, name: r.name };
+}
+
+function adaptEmployee(r: RawEmployee): Employee {
+  return {
+    id: r.id,
+    name: r.name,
+    email: r.email ?? "",
+    role: r.role ?? "developer",
+    designation: r.designation ?? null,
+  };
+}
+
+/** Pull an array out of a { key: [...] } envelope, tolerating a bare array too. */
+function unwrapList<T>(data: unknown, key: string): T[] {
+  if (Array.isArray(data)) return data as T[];
+  const nested = (data as Record<string, unknown> | null)?.[key];
+  return Array.isArray(nested) ? (nested as T[]) : [];
+}
+
+/** Map our UpdateTicketInput (frontend field names) → the backend PATCH body. */
+function toUpdateBody(patch: UpdateTicketInput): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (patch.name !== undefined) body.title = patch.name;
+  if (patch.description !== undefined) body.description = patch.description;
+  if (patch.category_id !== undefined) body.category_id = patch.category_id;
+  if (patch.assigned_to !== undefined) body.assignee_id = patch.assigned_to;
+  if (patch.priority !== undefined) body.priority = fromPriority(patch.priority);
+  return body;
+}
+
 // --- Mock transport ---------------------------------------------------------
 
 let ticketsStore: Ticket[] = [...mockTickets];
@@ -165,7 +259,14 @@ export const api = {
   // the backend publishes these routes; adjust paths here when it does) --------
   getTickets: (filters?: { status?: TicketStatus; priority?: Priority; assigned_to?: number }) =>
     endpoint<Ticket[]>(
-      () => request(`/tickets${buildQuery({ ...filters })}`),
+      () =>
+        request<unknown>(
+          `/tickets${buildQuery({
+            status: filters?.status,
+            priority: filters?.priority ? fromPriority(filters.priority) : undefined,
+            assigned_to: filters?.assigned_to,
+          })}`,
+        ).then((d) => unwrapList<RawTicket>(d, "tickets").map(adaptTicket)),
       () => {
         let items = [...ticketsStore];
         if (filters?.status) items = items.filter((t) => t.status === filters.status);
@@ -177,13 +278,24 @@ export const api = {
 
   getMyTickets: () =>
     endpoint<Ticket[]>(
-      () => request("/tickets/mine"),
+      () => request<unknown>("/tickets/mine").then((d) => unwrapList<RawTicket>(d, "tickets").map(adaptTicket)),
       () => delay(ticketsStore.filter((t) => t.assigned_to === mockCurrentUser.id)),
     )(),
 
   createTicket: (input: CreateTicketInput) =>
     endpoint<Ticket>(
-      () => request("/tickets", { method: "POST", body: JSON.stringify(input) }),
+      () =>
+        request<{ ticket: RawTicket }>("/tickets", {
+          method: "POST",
+          body: JSON.stringify({
+            title: input.name,
+            description: input.description,
+            category_id: input.category_id,
+            assignee_id: input.assigned_to ?? null,
+            priority: fromPriority(input.priority),
+            time_to_complete: input.time_to_complete ?? null,
+          }),
+        }).then((d) => adaptTicket(d.ticket)),
       () => {
         const ticket: Ticket = {
           ticket_id: nextTicketId++,
@@ -203,7 +315,24 @@ export const api = {
 
   updateTicket: (id: number, patch: UpdateTicketInput) =>
     endpoint<Ticket>(
-      () => request(`/tickets/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+      () => {
+        // Two backend routes: a status-only change is the DEVELOPER's control
+        // (PATCH /tickets/{id}/status), everything else is the AGENT's edit
+        // (PATCH /tickets/{id}). The queue only ever sends { status }, so a
+        // status-only payload routes to the developer-permitted endpoint.
+        const keys = Object.keys(patch);
+        const statusOnly = patch.status !== undefined && keys.length === 1;
+        if (statusOnly) {
+          return request<{ ticket: RawTicket }>(`/tickets/${id}/status`, {
+            method: "PATCH",
+            body: JSON.stringify({ status: patch.status }),
+          }).then((d) => adaptTicket(d.ticket));
+        }
+        return request<{ ticket: RawTicket }>(`/tickets/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify(toUpdateBody(patch)),
+        }).then((d) => adaptTicket(d.ticket));
+      },
       () => {
         ticketsStore = ticketsStore.map((t) => (t.ticket_id === id ? { ...t, ...patch } : t));
         const updated = ticketsStore.find((t) => t.ticket_id === id);
@@ -214,13 +343,18 @@ export const api = {
 
   getCategories: () =>
     endpoint<Category[]>(
-      () => request("/categories"),
+      () => request<unknown>("/categories").then((d) => unwrapList<RawCategory>(d, "categories").map(adaptCategory)),
       () => delay(mockCategories),
     )(),
 
+  // Assignee picker. The backend exposes developers at GET /developers (not
+  // /employees); an optional ?designation= filter narrows the list.
   getEmployees: (role?: Role) =>
     endpoint<Employee[]>(
-      () => request(`/employees${buildQuery({ role })}`),
+      () =>
+        request<unknown>("/developers").then((d) =>
+          unwrapList<RawEmployee>(d, "developers").map(adaptEmployee),
+        ),
       () => delay(role ? mockEmployees.filter((e) => e.role === role) : mockEmployees),
     )(),
 };

@@ -8,6 +8,36 @@
 
 ---
 
+## 🔔 Handoff from Soham — 2026-07-17 (read before starting)
+
+**The mock→real backend cutover is DONE and verified live.** Nishita published the ticket routes,
+and I wired the whole thing inside `lib/api.ts` + `ticketsSlice` — **your files are untouched.**
+
+What this means for you:
+- **`/queue` now runs on the real backend with no change on your side.** The backend shape
+  (`id`/`title`/`assignee_id`, capitalized priority, `data.tickets` envelope) is mapped to our
+  existing `Ticket` type by an **adapter** in `lib/api.ts`, so `useMyQueue` / `TicketCard` /
+  `StatusControl` all keep working as-is. Developers now correctly hit `GET /tickets/mine` (not the
+  agent-only list — that was the `/queue` 403 you'd have seen), and a status change routes to
+  `PATCH /tickets/{id}/status`.
+- **No priority sweep needed.** We chose *adapt-in-the-client* over adopting capitalized priority
+  everywhere, so `PRIORITIES` / `PRIORITY_BOLTS` stay lowercase and `PriorityBolt` is unchanged.
+
+**Your remaining Day-3 tasks:**
+1. **Verify `/queue` live** — start `npm run dev` (`.env.local` already points at the tunnel,
+   `NEXT_PUBLIC_USE_MOCK=false`), log in as a developer, confirm your assigned tickets render and a
+   status change persists. It should Just Work; ping me if a card looks off.
+2. **`/queue` polish** — disable `StatusControl` while a patch is in flight; keyboard focus;
+   responsive grid check.
+3. **Storybook housekeeping** — confirm every real component still has a story (demo boilerplate
+   was removed earlier).
+4. **README** — the frontend section / developer walkthrough; rehearse the demo.
+
+⚠️ **Backend still owes the `Secure` cookie flag** (`SameSite=None` needs `Secure`), so an in-browser
+session can still drop until Nishita adds it — not a frontend bug.
+
+---
+
 ## Progress log — Parinita
 
 > Running record of completed phases/tasks (mine, Parinita). **Newest entry first.**

@@ -61,8 +61,8 @@ Component → Redux thunk (slice) → api.ts → { real backend  |  mock layer }
 
 | File | What / why |
 |---|---|
-| `api.ts` | The single typed API client: cookie auth (`credentials:"include"`), `{status,msg,data}` parsing, field-level error surfacing, and the **refresh interceptor** (401 → refresh once → replay; single-flight guard). `endpoint(real, mock)` selects transport. |
-| `mockData.ts` | GuestMatchr fixtures (employees, categories, 8 tickets) so the app runs with no backend. |
+| `api.ts` | The single typed API client: cookie auth (`credentials:"include"`), `{status,msg,data}` parsing, field-level error surfacing, and the **refresh interceptor** (401 → refresh once → replay; single-flight guard). `endpoint(real, mock)` selects transport. **Also holds the backend↔frontend ADAPTER** (`adaptTicket`/`adaptCategory`/`adaptEmployee`, `to/fromPriority`, `unwrapList`): the real backend speaks `id`/`title`/`assignee_id` + capitalized priority + nested list envelopes, and this is the one place that maps it to our types — so nothing downstream changes. Ticket/category/developer routes are **live** (cutover 2026-07-17). |
+| `mockData.ts` | GuestMatchr fixtures (employees, categories, 8 tickets) — the `NEXT_PUBLIC_USE_MOCK=true` fallback so the app runs with no backend. |
 
 ### State (`src/store/`)
 

@@ -129,16 +129,25 @@ POST   /auth/refresh                               -> data: null (rotates cookie
 `401`s, the refresh token is dead → surface an auth error and force re-login. A
 single-flight guard prevents concurrent refreshes; the retry flag prevents loops.
 
-**Ticket / category / employee endpoints (provisional — backend not yet published;
-mock-backed until then):**
+**Ticket / category / employee endpoints (LIVE as of 2026-07-17 — confirmed against the
+real backend):**
 ```
-GET    /tickets            ?status= &priority= &assigned_to=   (board view)
-POST   /tickets            create (agent only)
-PATCH  /tickets/{id}       update status / assignee / priority
-GET    /tickets/mine       developer's own queue
-GET    /categories         list categories
-GET    /employees?role=    assignee picker
+GET    /tickets            agent   board view; ?status= &priority= &assigned_to=
+POST   /tickets            agent   create
+PATCH  /tickets/{id}       agent   edit (title/desc/category/priority/assignee)
+GET    /tickets/mine       dev     own queue; ?status= &priority=
+PATCH  /tickets/{id}/status dev    status-only change  { status }
+GET    /categories                 list categories
+GET    /developers         agent   assignee picker; ?designation=
 ```
+
+**Backend↔frontend shape mismatch — handled by an ADAPTER in `lib/api.ts`, nowhere else.**
+The backend uses `id`/`title`/`assignee_id`, capitalized priority (`Normal`/`Urgent`/`Severe`),
+and nests lists under `data.tickets` / `data.categories` / `data.developers`. Our frontend types
+keep `ticket_id`/`name`/`assigned_to` and lowercase priority. `api.ts` maps between the two in the
+one network seam (`adaptTicket`/`adaptCategory`/`adaptEmployee`, `to/fromPriority`, `unwrapList`),
+so types, store, components, and constants never see the backend shape. Status casing already
+matches (`Assigned`/`In Progress`/`Done`). `/developers` objects carry only `{id, name, designation}`.
 
 **Standard JSON envelope** — modeled as `ApiEnvelope<T>` in `src/types`:
 ```json
