@@ -16,7 +16,7 @@ import { useAppSelector } from "@/store/hooks";
 
 function QueueBody() {
   const user = useAppSelector((s) => s.auth.user);
-  const { tickets, loading, error, reload, updateStatus } = useMyQueue();
+  const { tickets, loading, error, reload, updateStatus, updatingId } = useMyQueue();
   const [categories, setCategories] = useState<Record<number, string>>({});
 
   useEffect(() => {
@@ -64,6 +64,7 @@ function QueueBody() {
               actions={
                 <StatusControl
                   status={t.status}
+                  disabled={updatingId === t.ticket_id}
                   onChange={(next) => {
                     void updateStatus(t.ticket_id, next);
                   }}
