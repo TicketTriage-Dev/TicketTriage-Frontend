@@ -165,10 +165,20 @@ Errors use the same shape with a 4xx/5xx `status` and a human message in `msg`.
   auto-logs-in and redirects by role on success.
 - **`/board`** — Kanban board (To do / In progress / Done). Cards show ticket ID, title, category
   tag, priority (bolts), estimate, assignee avatar. Agents can create + assign here.
-- **`/queue`** — developer's own assigned tickets, with status controls.
-- **`/team`, `/settings`** — simple placeholder pages reached from the sidebar.
-- Shared shell: slim left sidebar (Board / My queue / Team / Settings) + top bar with search and a
-  letter avatar of the current user.
+- **`/queue`** — developer's own assigned tickets, with status controls. Developer-only (guarded).
+- **`/team`** — **agent-only** developer roster from `GET /developers`, each with an "open workload"
+  count (non-Done assigned tickets, computed client-side). No longer a placeholder.
+- **`/settings`** — placeholder, any authenticated user.
+- Shared shell: slim left sidebar + top bar with search and a letter avatar of the current user.
+  The sidebar is **role-gated**: agents see Board / Team / Settings; developers see Board / My queue
+  / Settings (nav items carry a `roles` list in `constants/`).
+
+**Runtime behaviors enforced by the backend (frontend must respect):**
+- **Status is forward-only; `Done` is terminal** — the backend returns `422 "Cannot change status
+  from Done to …"`. (Known FE gap: the queue control still offers backward moves and swallows the
+  422 silently — candidate follow-up: lock the control on Done or surface the message.)
+- **Description min 2 chars** on create; field-level errors (`data.errors`) are surfaced by `api.ts`.
+- Create requires title, description (≥2), category, priority, and an assignee.
 
 ---
 
@@ -179,10 +189,10 @@ app/            App Router pages: login, board, queue, team, settings (+ layout,
 components/
   auth/         login form, route/role guards
   layout/       AppShell, Sidebar, TopBar
-  board/        board columns, create-ticket panel, assignee dropdown
-  tickets/      TicketCard, PriorityBolt, CategoryTag (shared, prop-driven)
-  ui/           primitives / react-bootstrap wrappers (Button, Badge, Avatar, Modal…)
-lib/            api.ts (fetch client) + mockData.ts (fixtures until backend is live)
+  board/        BoardColumn, CreateTicketPanel, EditTicketPanel (agent create/edit + assign)
+  tickets/      TicketCard, PriorityBolt, CategoryTag, StatusControl (shared, prop-driven)
+  ui/           primitives / react-bootstrap wrappers (Button, Badge, Avatar, Modal, States…)
+lib/            api.ts (fetch client + backend adapter) + mockData.ts (mock fallback)
 hooks/          reusable hooks
 store/          Redux store + slices (authSlice, ticketsSlice)
 constants/      statuses, priorities, categories, nav items

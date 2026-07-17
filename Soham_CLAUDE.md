@@ -13,6 +13,23 @@
 > Running record of my completed phases/tasks. **Newest entry first.** Add an entry
 > whenever a phase or task is finished: what was done and anything carried over.
 
+### 2026-07-17 — Merge integration, backend rules verified, docs deep-dive ✅
+
+- **Integrated Parinita's branch** — merged `origin/main` (her `StatusControl` disable-while-saving)
+  with my Day-3 work into a clean 2-parent merge (`c8527de`). Both features present, `tsc` clean,
+  pushed. (First attempt produced a broken single-parent commit; redone properly.)
+- **Verified backend transition rules against the live API** — status is **forward-only and `Done`
+  is terminal** (`422 "Cannot change status from Done to …"`); create enforces **description ≥ 2
+  chars**. Documented as known behaviors. ⚠️ Open FE gap: the queue still offers backward moves on a
+  Done ticket and swallows the 422 silently — needs a lock-on-Done or an error surface.
+- **Deploy assessment** — frontend is deploy-ready and env-driven; the real work is backend-side
+  (stable HTTPS host, CORS origin) plus the third-party-cookie caveat for cross-domain hosting.
+  Captured in `ARCHITECTURE.md §13` and the READMEs.
+- **Docs** — rewrote `frontend/docs/ARCHITECTURE.md` into a full detailed reference (data flow,
+  auth lifecycle, the api.ts adapter seam + endpoint map, state model, per-route role model,
+  component catalog, backend rules, deployment). Refreshed `CLAUDE.md` (pages + runtime behaviors)
+  and `FRONTEND_WORKPLAN.md`.
+
 ### 2026-07-17 — Board validation + loading/error polish + role-aware nav ✅
 
 - **Nav bug** — the sidebar showed "My queue" to everyone, but `/queue` is developer-only, so an

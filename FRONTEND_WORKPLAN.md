@@ -152,10 +152,10 @@ The real-API cutover is **done and verified** (Soham, in `lib/api.ts` + `tickets
 - **Soham:** ✅ done — root `README`, create/edit validation (`title` + `category` + `assignee`
   required, per-field inline errors), board loading/error polish, role-aware sidebar nav. Only the
   demo rehearsal remains.
-- **Parinita:** `/queue` polish — disable `StatusControl` while a status patch is in flight,
-  keyboard focus, responsive grid check. Then **verify `/queue` against the live backend** (it maps
-  to our existing `Ticket` shape via the adapter, so your page should need **no change**). Storybook
-  housekeeping (confirm every real component still has a story) + the frontend `README` section.
+- **Parinita:** ✅ done — `/queue` polish (`StatusControl` disables while a patch is in flight via
+  `updatingId`), Storybook housekeeping (all 12 components have stories), and a real **Team page**
+  (`/team`, agent-only roster + open-workload counts from `GET /developers` + `GET /tickets`). Only
+  the live `/queue` browser verify + demo rehearsal remain.
   > **No priority-casing sweep needed:** we chose *adapt-in-the-client*, so `PRIORITIES` /
   > `PRIORITY_BOLTS` stay lowercase — `PriorityBolt` is untouched.
 - **Both:** end-to-end demo rehearsal (agent creates+assigns → developer sees it in `/queue` →
