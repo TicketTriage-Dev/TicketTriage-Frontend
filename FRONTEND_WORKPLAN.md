@@ -149,8 +149,9 @@ If an interface isn't ready, stub it and keep going — swap the real one in whe
 The real-API cutover is **done and verified** (Soham, in `lib/api.ts` + `ticketsSlice`), so
 `/board` and `/queue` now run on the live backend with no component changes. Remaining:
 
-- **Soham:** root `README` (currently a stub); create/edit form validation (`title` + `assignee`
-  required) + board loading/error polish.
+- **Soham:** ✅ done — root `README`, create/edit validation (`title` + `category` + `assignee`
+  required, per-field inline errors), board loading/error polish, role-aware sidebar nav. Only the
+  demo rehearsal remains.
 - **Parinita:** `/queue` polish — disable `StatusControl` while a status patch is in flight,
   keyboard focus, responsive grid check. Then **verify `/queue` against the live backend** (it maps
   to our existing `Ticket` shape via the adapter, so your page should need **no change**). Storybook

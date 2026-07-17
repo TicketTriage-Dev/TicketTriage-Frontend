@@ -31,6 +31,15 @@ export function CreateTicketPanel({ show, onHide, categories, developers }: Crea
   const [form, setForm] = useState(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // Required fields (backend requires title, category, and an assignee).
+  const fieldErrors = {
+    name: form.name.trim() ? "" : "Title is required.",
+    category_id: form.category_id ? "" : "Category is required.",
+    assigned_to: form.assigned_to ? "" : "Assignee is required.",
+  };
+  const isValid = !fieldErrors.name && !fieldErrors.category_id && !fieldErrors.assigned_to;
 
   function set<K extends keyof typeof EMPTY>(key: K, value: (typeof EMPTY)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -39,13 +48,14 @@ export function CreateTicketPanel({ show, onHide, categories, developers }: Crea
   function close() {
     setForm(EMPTY);
     setError(null);
+    setShowErrors(false);
     onHide();
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!form.name.trim() || !form.category_id) {
-      setError("Title and category are required.");
+    if (!isValid) {
+      setShowErrors(true);
       return;
     }
     setSubmitting(true);
@@ -97,8 +107,9 @@ export function CreateTicketPanel({ show, onHide, categories, developers }: Crea
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
             placeholder="Short summary"
-            required
+            isInvalid={showErrors && !!fieldErrors.name}
           />
+          <Form.Control.Feedback type="invalid">{fieldErrors.name}</Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="ticket-description">
@@ -118,7 +129,7 @@ export function CreateTicketPanel({ show, onHide, categories, developers }: Crea
             <Form.Select
               value={form.category_id}
               onChange={(e) => set("category_id", e.target.value)}
-              required
+              isInvalid={showErrors && !!fieldErrors.category_id}
             >
               <option value="">Select…</option>
               {categories.map((c) => (
@@ -127,6 +138,7 @@ export function CreateTicketPanel({ show, onHide, categories, developers }: Crea
                 </option>
               ))}
             </Form.Select>
+            <Form.Control.Feedback type="invalid">{fieldErrors.category_id}</Form.Control.Feedback>
           </Form.Group>
 
           <Form.Group className="flex-fill" controlId="ticket-priority">
@@ -150,8 +162,9 @@ export function CreateTicketPanel({ show, onHide, categories, developers }: Crea
             <Form.Select
               value={form.assigned_to}
               onChange={(e) => set("assigned_to", e.target.value)}
+              isInvalid={showErrors && !!fieldErrors.assigned_to}
             >
-              <option value="">Unassigned</option>
+              <option value="">Select…</option>
               {developers.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
@@ -159,6 +172,7 @@ export function CreateTicketPanel({ show, onHide, categories, developers }: Crea
                 </option>
               ))}
             </Form.Select>
+            <Form.Control.Feedback type="invalid">{fieldErrors.assigned_to}</Form.Control.Feedback>
           </Form.Group>
 
           <Form.Group className="flex-fill" controlId="ticket-estimate">

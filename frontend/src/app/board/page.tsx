@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Spinner } from "react-bootstrap";
+import { Alert } from "react-bootstrap";
 import { RouteGuard } from "@/components/auth/RouteGuard";
 import { AppShell } from "@/components/layout/AppShell";
 import { BoardColumn } from "@/components/board/BoardColumn";
 import { CreateTicketPanel } from "@/components/board/CreateTicketPanel";
 import { EditTicketPanel } from "@/components/board/EditTicketPanel";
 import { Button } from "@/components/ui/Button";
+import { ErrorState, LoadingState } from "@/components/ui/States";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   fetchTickets,
@@ -49,7 +50,10 @@ function BoardInner() {
     return (id: number | null) => (id == null ? null : (map.get(id) ?? null));
   }, [developers]);
 
-  const loading = status === "loading" && tickets.length === 0;
+  // First load (nothing to show yet) gets a full loading/error state; once the
+  // board has data, a failed refetch only shows a non-blocking banner.
+  const initialLoading = (status === "idle" || status === "loading") && tickets.length === 0;
+  const initialError = status === "failed" && tickets.length === 0;
 
   return (
     <AppShell userName={user?.name}>
@@ -64,12 +68,12 @@ function BoardInner() {
         )}
       </div>
 
-      {error && <Alert variant="danger" className="py-2">{error}</Alert>}
+      {error && tickets.length > 0 && <Alert variant="danger" className="py-2">{error}</Alert>}
 
-      {loading ? (
-        <div className="d-flex justify-content-center py-5">
-          <Spinner animation="border" style={{ color: "var(--navy)" }} role="status" />
-        </div>
+      {initialLoading ? (
+        <LoadingState label="Loading the board…" />
+      ) : initialError ? (
+        <ErrorState message={error ?? undefined} onRetry={() => dispatch(fetchTickets())} />
       ) : (
         <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
           {STATUSES.map((col) => (

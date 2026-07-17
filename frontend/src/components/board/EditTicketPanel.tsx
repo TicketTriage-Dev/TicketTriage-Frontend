@@ -37,6 +37,15 @@ export function EditTicketPanel({ show, onHide, ticket, categories, developers }
   const [form, setForm] = useState(BLANK);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // Required fields (backend requires title, category, and an assignee).
+  const fieldErrors = {
+    name: form.name.trim() ? "" : "Title is required.",
+    category_id: form.category_id ? "" : "Category is required.",
+    assigned_to: form.assigned_to ? "" : "Assignee is required.",
+  };
+  const isValid = !fieldErrors.name && !fieldErrors.category_id && !fieldErrors.assigned_to;
 
   // Prefill the form whenever the target ticket changes.
   useEffect(() => {
@@ -50,6 +59,7 @@ export function EditTicketPanel({ show, onHide, ticket, categories, developers }
         time_to_complete: ticket.time_to_complete != null ? String(ticket.time_to_complete) : "",
       });
       setError(null);
+      setShowErrors(false);
     }
   }, [ticket]);
 
@@ -60,8 +70,8 @@ export function EditTicketPanel({ show, onHide, ticket, categories, developers }
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!ticket) return;
-    if (!form.name.trim() || !form.category_id) {
-      setError("Title and category are required.");
+    if (!isValid) {
+      setShowErrors(true);
       return;
     }
     setSubmitting(true);
@@ -116,8 +126,9 @@ export function EditTicketPanel({ show, onHide, ticket, categories, developers }
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
             placeholder="Short summary"
-            required
+            isInvalid={showErrors && !!fieldErrors.name}
           />
+          <Form.Control.Feedback type="invalid">{fieldErrors.name}</Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="edit-description">
@@ -137,7 +148,7 @@ export function EditTicketPanel({ show, onHide, ticket, categories, developers }
             <Form.Select
               value={form.category_id}
               onChange={(e) => set("category_id", e.target.value)}
-              required
+              isInvalid={showErrors && !!fieldErrors.category_id}
             >
               <option value="">Select…</option>
               {categories.map((c) => (
@@ -146,6 +157,7 @@ export function EditTicketPanel({ show, onHide, ticket, categories, developers }
                 </option>
               ))}
             </Form.Select>
+            <Form.Control.Feedback type="invalid">{fieldErrors.category_id}</Form.Control.Feedback>
           </Form.Group>
 
           <Form.Group className="flex-fill" controlId="edit-priority">
@@ -169,8 +181,9 @@ export function EditTicketPanel({ show, onHide, ticket, categories, developers }
             <Form.Select
               value={form.assigned_to}
               onChange={(e) => set("assigned_to", e.target.value)}
+              isInvalid={showErrors && !!fieldErrors.assigned_to}
             >
-              <option value="">Unassigned</option>
+              <option value="">Select…</option>
               {developers.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
@@ -178,6 +191,7 @@ export function EditTicketPanel({ show, onHide, ticket, categories, developers }
                 </option>
               ))}
             </Form.Select>
+            <Form.Control.Feedback type="invalid">{fieldErrors.assigned_to}</Form.Control.Feedback>
           </Form.Group>
 
           <Form.Group className="flex-fill" controlId="edit-estimate">

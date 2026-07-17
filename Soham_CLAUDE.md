@@ -13,6 +13,21 @@
 > Running record of my completed phases/tasks. **Newest entry first.** Add an entry
 > whenever a phase or task is finished: what was done and anything carried over.
 
+### 2026-07-17 — Board validation + loading/error polish + role-aware nav ✅
+
+- **Nav bug** — the sidebar showed "My queue" to everyone, but `/queue` is developer-only, so an
+  agent clicking it got bounced to `/board` ("redirects to nothing"). `NAV_ITEMS` now carries a
+  `roles` list and `Sidebar` filters by the logged-in role (agent: Board/Team/Settings; developer
+  adds My queue).
+- **Create/Edit validation** — title, category, **and assignee** are now required, shown as
+  per-field inline errors (react-bootstrap `isInvalid` + `Form.Control.Feedback`) instead of one
+  generic alert; the top alert is reserved for server errors.
+- **Board loading/error polish** — first load uses the shared `LoadingState` / `ErrorState`
+  (with a "Try again" retry) matching `/queue`; once the board has data, a failed refetch only
+  shows a non-blocking banner instead of blanking the board. `tsc` clean.
+
+**Soham's Day-3 remaining:** just the end-to-end demo rehearsal.
+
 ### 2026-07-17 — Post-demo bug fixes (board assignee + estimate) ✅
 
 Two issues caught while testing with Parinita:
