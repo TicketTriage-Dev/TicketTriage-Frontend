@@ -44,6 +44,25 @@ issue is resolved; no frontend action needed.
 > Add an entry whenever a phase or task is finished: what was done, commit hashes,
 > and anything carried over. This is a human-readable record separate from git history.
 
+### 2026-07-17 — Day 3 (polish + Team page)
+
+**Context:** Soham shipped the mock→real cutover (adapter in `lib/api.ts`, role-aware `fetchTickets`
+→ `/tickets/mine` for devs, status → `PATCH /tickets/{id}/status`, `/developers`). My files were
+untouched and everything still compiles. Frontend `README` is Soham's and already written.
+
+**Completed** (`tsc`, `next build`, `build-storybook` all clean):
+- **Team page** (`/team`) — replaced the placeholder with a real developer roster from
+  `GET /developers` (via `api.getEmployees`); loading/empty/error states. (Team agreed to build it out.)
+- **`/queue` polish** — `useMyQueue` tracks the in-flight ticket (`updatingId`); the saving card's
+  `StatusControl` disables until the patch resolves (no rapid re-fires / races). Keyboard focus
+  (native select ring) and the responsive auto-fill grid were already fine.
+- **Storybook housekeeping** — all 12 reusable components have stories; `build-storybook` clean;
+  demo boilerplate gone.
+
+**Remaining:** live `/queue` browser verify against the real backend; demo rehearsal.
+
+**Day 3 status:** polish + Team done; live verify + rehearsal pending.
+
 ### 2026-07-16 — Day 2 (queue + status controls)
 
 **Context:** Soham landed the auth vertical + Nishita's real API contract (cookie sessions,
