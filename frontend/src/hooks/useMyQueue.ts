@@ -3,7 +3,7 @@
 // Reads from the shared `ticketsSlice` (owned by Soham) so board & queue stay in
 // sync off one store. This hook is the only place /queue touches ticket data —
 // the returned shape is stable, so the page never changes when the source does.
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   fetchTickets,
@@ -22,6 +22,8 @@ export interface UseMyQueue {
   reload: () => void;
   /** Change a ticket's status (persists via patchTicket → store updates on success). */
   updateStatus: (id: number, status: TicketStatus) => Promise<void>;
+  /** Ticket id whose status change is currently saving (for disabling its control). */
+  updatingId: number | null;
 }
 
 export function useMyQueue(): UseMyQueue {
@@ -30,6 +32,7 @@ export function useMyQueue(): UseMyQueue {
   const status = useAppSelector(selectTicketsStatus);
   const error = useAppSelector(selectTicketsError);
   const userId = useAppSelector((s) => s.auth.user?.id);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   const reload = useCallback(() => {
     void dispatch(fetchTickets());
@@ -42,11 +45,16 @@ export function useMyQueue(): UseMyQueue {
 
   const updateStatus = useCallback(
     async (id: number, next: TicketStatus) => {
-      // Don't unwrap: a rejected patch resolves the dispatch without throwing, so
-      // the caller's fire-and-forget onChange can't leak an unhandled rejection.
-      // The store is the source of truth — on success `patchTicket.fulfilled`
-      // upserts the ticket; on failure it stays as-is.
-      await dispatch(patchTicket({ id, patch: { status: next } }));
+      // Mark this ticket as saving so its control disables (prevents rapid re-fires
+      // and races). Don't unwrap: a rejected patch resolves without throwing, so the
+      // caller's fire-and-forget onChange can't leak an unhandled rejection. The
+      // store is the source of truth — patchTicket.fulfilled upserts on success.
+      setUpdatingId(id);
+      try {
+        await dispatch(patchTicket({ id, patch: { status: next } }));
+      } finally {
+        setUpdatingId(null);
+      }
     },
     [dispatch],
   );
@@ -58,5 +66,6 @@ export function useMyQueue(): UseMyQueue {
     error,
     reload,
     updateStatus,
+    updatingId,
   };
 }
