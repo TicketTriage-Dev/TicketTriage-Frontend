@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/constants";
+import { useAppSelector } from "@/store/hooks";
 
 // Navy sidebar with the gold active state (palette per CLAUDE.md §3). Outline
 // icons are hand-built so we don't pull in an icon dependency.
@@ -58,6 +59,11 @@ function NavIcon({ href }: { href: string }) {
 export function Sidebar() {
   const pathname = usePathname() ?? "";
   const [hovered, setHovered] = useState<string | null>(null);
+  const role = useAppSelector((s) => s.auth.user?.role);
+
+  // Show only the items this role is allowed to reach (before the session
+  // resolves, `role` is undefined → show all, then it settles).
+  const items = NAV_ITEMS.filter((item) => !role || item.roles.includes(role));
 
   return (
     <nav
@@ -83,7 +89,7 @@ export function Sidebar() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const hover = hovered === item.href && !active;
           return (

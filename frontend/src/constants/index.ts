@@ -50,13 +50,17 @@ export const DESIGNATIONS = [
 
 export type Designation = (typeof DESIGNATIONS)[number];
 
-/** Sidebar navigation items. */
-export const NAV_ITEMS = [
-  { href: "/board", label: "Board" },
-  { href: "/queue", label: "My queue" },
-  { href: "/team", label: "Team" },
-  { href: "/settings", label: "Settings" },
-] as const;
+/**
+ * Sidebar navigation items. `roles` gates visibility — "My queue" is a
+ * developer's personal queue (agents have none, and `/queue` is role-guarded),
+ * so it only shows for developers. The board is a shared view.
+ */
+export const NAV_ITEMS: { href: string; label: string; roles: Role[] }[] = [
+  { href: "/board", label: "Board", roles: ["agent", "developer"] },
+  { href: "/queue", label: "My queue", roles: ["developer"] },
+  { href: "/team", label: "Team", roles: ["agent", "developer"] },
+  { href: "/settings", label: "Settings", roles: ["agent", "developer"] },
+];
 
 /** Where each role lands after login (and the guard's default redirect). */
 export const HOME_BY_ROLE: Record<Role, string> = {
